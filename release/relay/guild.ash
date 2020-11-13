@@ -262,7 +262,8 @@ void main() {
   _debug("Loaded");
 
   // Check if the user is visiting the guild trainer (guild.php?place=trainer)
-  if (form_field("place") != "trainer") {
+  // or has just bought a skill (guild.php?action=buyskill)
+  if (form_field("place") != "trainer" && form_field("action") != "buyskill") {
     // Do nothing. This causes KoLmafia to present the original page as-is.
     return;
   }
