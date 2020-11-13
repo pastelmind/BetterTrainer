@@ -13,6 +13,11 @@ void _debug(string msg) {
   if (__DEBUG__) print(`[relay/guild.ash][{time_to_string()}] {msg}`);
 }
 
+// Prints a debug message to the CLI and aborts the script
+void _error(string msg) {
+  abort(`[relay/guild.ash][{time_to_string()}] ERROR: {msg}`);
+}
+
 
 void main() {
   _debug("Loaded");
