@@ -338,7 +338,7 @@ void main() {
           // The form action does not exist, and the button is unusable
           writeln(`    <button class="button" type="submit" disabled style="color: #cccccc">`);
         }
-        writeln(`      Buy<br><span style="font-size: 75%">({to_string(sk.traincost, "%,d")} meat)</span>`);
+        writeln(`      Buy<br><span style="font-size: 75%">{to_string(sk.traincost, "%,d")} meat</span>`);
         writeln(`    </button>`);
         writeln(`    {"".join(skill_info.hidden_inputs)}`);
         writeln(`  </form>`);
