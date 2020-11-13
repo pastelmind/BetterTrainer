@@ -19,9 +19,7 @@ void _error(string msg) {
 }
 
 
-// Represents the result of an xpath() match result.
-// Because xpath() attempts to "clean" HTML fragments into well-formed HTML,
-// we cannot call xpath() on a node fragment without ruining it.
+// Represents the result of an xpath() match.
 record XPathMatch {
   string html;          // Original HTML document
   string selector;      // XPath selector used to retrieve the nodes
@@ -31,7 +29,6 @@ record XPathMatch {
 
 // Creates an XPath match.
 XPathMatch xpath_match(string html, string selector) {
-  _debug(`xpath() called with {selector}`);
   return new XPathMatch(html, selector, xpath(html, selector));
 }
 
@@ -55,12 +52,42 @@ XPathMatch find(XPathMatch match, string selector) {
 }
 
 
+// Matcher for "block-level" nodes that can be safely split into independent nodes.
+// cf. <tr> and <td> must not be split into independent nodes, because xpath()
+// will destroy them in an attempt to "clean" the HTML.
+// For now, this is a list of tags allowed in <body>, taken from:
+// https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Flow_content
+matcher _BLOCK_NODE_MATCHER = create_matcher(`^<(?:a|abbr|address|article|aside|audio|b|bdo|bdi|blockquote|br|button|canvas|cite|code|command|data|datalist|del|details|dfn|div|dl|em|embed|fieldset|figure|footer|form|h1|h2|h3|h4|h5|h6|header|hgroup|hr|i|iframe|img|input|ins|kbd|keygen|label|main|map|mark|math|menu|meter|nav|noscript|object|ol|output|p|picture|pre|progress|q|ruby|s|samp|script|section|select|small|span|strong|sub|sup|svg|table|template|textarea|time|ul|var|video|wbr)`, '');
+
+
+// Lazy check to see if this is a block node
+boolean is_block_node(string node) {
+  return _BLOCK_NODE_MATCHER.reset(node).find();
+}
+
+
 // Get a single node in the current match set as a new match set.
 XPathMatch get(XPathMatch match, int index) {
-  // If the current match set has only one element,
-  // don't bother adding an order selector
+  string node = match.nodes[index];
+  // If this is a block-level node, it's safe to split off into a new fragment.
+  if (is_block_node(node)) {
+    // Split the node into a new HTML fragment and "reset" the selector.
+    // This makes the HTML and the selector smaller, which makes xpath() faster.
+    // The "/body/*[1]" part provides a proper context for chained selectors and
+    // prevents the  new "root" node from being accidentally selected.
+    // For example, take a look at the following two lines of code:
+    //
+    //    xpath_match(html, "(//table)[1]//table");
+    //    xpath_match(html, "//table").get(0).find("//table");
+    //
+    // Both lines are meant to be equivalent. If we didn't specify "/body/*[1]",
+    // however, the second example would also select the outer table.
+    return new XPathMatch(node, "/body/*[1]", { 0: node });
+  }
+  // Otherwise, reuse the HTML and narrow down the selector.
+  // If the current match set contains only one element, don't bother updating the selector.
   string selector = match.nodes.count() == 1 ? match.selector : `({match.selector})[{index + 1}]`;
-  return new XPathMatch(match.html, selector, { 0: match.nodes[index] });
+  return new XPathMatch(match.html, selector, { 0: node });
 }
 
 
@@ -84,7 +111,7 @@ string raw(XPathMatch match, int index) {
 
 // Alias for match.raw(0)
 string raw(XPathMatch match) {
-  return match.raw(0);
+  return match.nodes[0];
 }
 
 
@@ -135,7 +162,7 @@ XPathMatch first(XPathMatch [int] matches) {
 // Helper function for handling lists of XPathMatch records.
 // Returns the last item in a list of match sets.
 XPathMatch last(XPathMatch [int] matches) {
-  return matches[0].last();
+  return matches[matches.count() - 1].last();
 }
 
 
@@ -190,23 +217,24 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
   }
 
   // Verify that the skill level in the text matches the known skill level
-  // string LEVEL_PATTERN = "Level (\\d+)";
-  // string level_text = row_node.find("//td").matching(LEVEL_PATTERN).last().raw();
+  string LEVEL_PATTERN = "Level (\\d+)";
+  string level_text = row_node.find("//td").matching(LEVEL_PATTERN).last().raw();
 
-  // matcher m = create_matcher(LEVEL_PATTERN, level_text);
-  // if (!m.find()) {
-  //   _error(`This should be unreachable. Cannot find "{LEVEL_PATTERN}" although it was already matched.`);
-  // }
-  // int level_from_text = to_int(m.group(1));
-  // if (the_skill.level != level_from_text) {
-  //   _debug(`KoLmafia believes that {the_skill} has a level of {the_skill.level}, but the game says that it's actually {level_from_text}`);
-  // }
+  matcher m = create_matcher(LEVEL_PATTERN, level_text);
+  if (!m.find()) {
+    _error(`This should be unreachable. Cannot find "{LEVEL_PATTERN}" although it was already matched.`);
+  }
+  int level_from_text = to_int(m.group(1));
+  if (the_skill.level != level_from_text) {
+    _debug(`KoLmafia believes that {the_skill} has a level of {the_skill.level}, but the game says that it's actually {level_from_text}`);
+  }
 
   // Build the skill info record
   string node_img = row_node.find("//img").raw();
   XPathMatch form = row_node.find("//form");
   string form_action;
-  form_action = row_node.find("//form/@action").raw();
+  // If the form does not exist, leave the action empty
+  if (!form.empty()) form_action = form.find("/@action").raw();
   string [int] hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   return new TrainerSkillInfo(
     the_skill, node_img, node_skill_name.raw(), form_action, hidden_inputs
