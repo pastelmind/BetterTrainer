@@ -186,19 +186,19 @@ record TrainerSkillInfo {
 skill [int][int] class_guild_skills(class the_class) {
   skill [int][int] guild_skills;
 
-  foreach the_skill in $skills[] {
+  foreach sk in $skills[] {
     // All skills have a level between -1 and 15, inclusive.
     // -1 means the skill does not have a level, and is not a guild skill.
     // 0 means the skill is a starting skill, and therefore not a guild skill.
     // 1~15 means the skill is a guild skill.
-    if (the_skill.class == the_class && the_skill.level > 0) {
+    if (sk.class == the_class && sk.level > 0) {
+      print(`Considering {sk}`);
       // Sanity check, probably unnecessary
-      if (the_skill.traincost <= 0) {
-        _debug(`{the_skill} appears to be a guild skill, but does not have an associated training cost.`);
+      if (sk.traincost <= 0) {
+        _debug(`{sk} appears to be a guild skill, but does not have an associated training cost.`);
       }
 
-      skill [int] skills_of_level = guild_skills[the_skill.level];
-      skills_of_level[skills_of_level.count()] = the_skill;
+      guild_skills[sk.level][guild_skills[sk.level].count()] = sk;
     }
   }
 
@@ -239,6 +239,22 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
   return new TrainerSkillInfo(
     the_skill, node_img, node_skill_name.raw(), form_action, hidden_inputs
   );
+}
+
+
+// Utility function
+string join(string joiner, string [int] fragments) {
+  buffer joined;
+  boolean is_first = true;
+  foreach _, str in fragments {
+    if (is_first) {
+      is_first = false;
+    } else {
+      joined.append(joiner);
+    }
+    joined.append(str);
+  }
+  return joined;
 }
 
 
@@ -285,8 +301,73 @@ void main() {
   // - Skill ID sent to server when the "Buy" button is clicked.
   //   This is DIFFERENT from the actual skill ID!
 
+  // To replace the original table, we must find the index of the cleaned HTML:
+  string cleaned_html = xpath(page, "/[1]")[0];
+  int index = cleaned_html.index_of(outer_table.raw());
+  print(`Index of outer table: {index}`);
+
+  // Write everything before the original table
+  write(cleaned_html.substring(0, index));
+
   // 2. Find out which skills have been already purchased/permed
   // 3. Build a pretty table
+
+  skill [int][int] guild_skills = class_guild_skills(my_class());
+
+  writeln("<table>");
+  writeln("<tbody>");
+
+  foreach level in guild_skills {
+    writeln("<tr>");
+    writeln(`  <td>Level {level}</td>`);
+
+    foreach _, sk in guild_skills[level] {
+      if (trainable_skills contains sk) {
+        // Good, the skill is either buyable or unlockable.
+        TrainerSkillInfo skill_info = trainable_skills[sk];
+
+        writeln(`<td>{skill_info.node_img}</td>`);
+        writeln(`<td>{skill_info.node_skill_name}</td>`);
+        writeln(`<td>`);
+        writeln(`  <form action="{skill_info.form_action}" style="margin: 0">`);
+        if (skill_info.form_action.length() > 0) {
+          // The form action exists, and the button is usable
+          writeln(`    <button class="button" type="submit">`);
+        } else {
+          // Skill cannot be purchased because your level is too low.
+          // The form action does not exist, and the button is unusable
+          writeln(`    <button class="button" type="submit" disabled style="color: #cccccc">`);
+        }
+        writeln(`      Buy<br><span style="font-size: 75%">({to_string(sk.traincost, "%,d")} meat)</span>`);
+        writeln(`    </button>`);
+        writeln(`    {"".join(skill_info.hidden_inputs)}`);
+        writeln(`  </form>`);
+        writeln(`</td>`);
+      } else {
+        // The vanilla trainer page does NOT provide link and images
+        // TODO: Generate our own links
+        writeln(`<td><img src="/images/itemimages/{sk.image}"></td>`);
+        writeln(`<td>{sk}</td>`);
+        writeln(`<td>`);
+        if (have_skill(sk)) {
+          // You already bought or permed the skill
+          writeln(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
+        } else {
+          // The guild store doesn't display the skill for unknown reason
+          writeln(`  <button class="button" type="submit" disabled style="color: #cccccc">N/A</button>`);
+        }
+        writeln(`</td>`);
+      }
+    }
+
+    writeln("</tr>");
+  }
+
+  writeln("</tbody>");
+  writeln("</table>");
+
+  // Write the original table, and everything after it
+  write(cleaned_html.substring(index));
 
   // TODO: When the script fails for some reason, we should write a message so that the user knows about it.
 }
