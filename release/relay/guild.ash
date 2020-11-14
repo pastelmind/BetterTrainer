@@ -124,24 +124,24 @@ string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
 
   foreach level in guild_skills {
     html.append("<tr>");
-    html.append(`  <td>Level {level}</td>`);
+    html.append(`  <td class="small" style="text-align: right; padding-right: .5em">Level {level})</td>`);
 
     foreach _, sk in guild_skills[level] {
       if (trainable_skills contains sk) {
         // Good, the skill is either buyable or unlockable.
         TrainerSkillInfo skill_info = trainable_skills[sk];
 
-        html.append(`<td>{skill_info.node_img}</td>`);
-        html.append(`<td>{skill_info.node_skill_name}</td>`);
+        html.append(`<td><span style="cursor: pointer">{skill_info.node_img}</span></td>`);
+        html.append(`<td><b style="cursor: pointer">{skill_info.node_skill_name}</b></td>`);
         html.append(`<td>`);
         html.append(`  <form action="{skill_info.form_action}" style="margin: 0">`);
         if (skill_info.form_action.length() > 0) {
           // The form action exists, and the button is usable
-          html.append(`    <button class="button" type="submit">`);
+          html.append(`    <button class="button" type="submit" style="min-width: 5.5em">`);
         } else {
           // Skill cannot be purchased because your level is too low.
           // The form action does not exist, and the button is unusable
-          html.append(`    <button class="button" type="submit" disabled style="color: #cccccc">`);
+          html.append(`    <button class="button" type="submit" disabled style="min-width: 5.5em; color: #cccccc">`);
         }
         html.append(`      Buy<br><span style="font-size: 75%">{to_string(sk.traincost, "%,d")} meat</span>`);
         html.append(`    </button>`);
@@ -150,16 +150,18 @@ string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
         html.append(`</td>`);
       } else {
         // The vanilla trainer page does NOT provide link and images
-        // TODO: Generate our own links
-        html.append(`<td><img src="/images/itemimages/{sk.image}"></td>`);
-        html.append(`<td>{sk}</td>`);
+        // Thus, we have to generate our own links
+        // (This may break if KoL changes the guild trainer in the future)
+        string onclick = `poop('desc_skill.php?whichskill={to_int(sk)}&self=true', 'skill', 350, 300)`;
+        html.append(`<td><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
+        html.append(`<td><b onclick="{onclick}" style="cursor: pointer">{sk}</b></td>`);
         html.append(`<td>`);
         if (have_skill(sk)) {
           // You already bought or permed the skill
           html.append(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
         } else {
           // The guild store doesn't display the skill for unknown reason
-          html.append(`  <button class="button" type="submit" disabled style="color: #cccccc">N/A</button>`);
+          html.append(`  <button class="button" type="submit" disabled style="min-width: 5.5em; color: #cccccc">N/A</button>`);
         }
         html.append(`</td>`);
       }
@@ -231,8 +233,18 @@ void main() {
   // Insert our pretty table
   write(generate_skill_table(trainable_skills));
 
-  // Write the original table, and everything after it
-  write(cleaned_html.substring(vanilla_skill_table_pos));
+  // Write a <hr> to separate the new table from the old one
+  write("<hr>");
+
+  // Wrap the original table inside a <details>
+  write("<details>");
+  write('  <summary style="cursor: pointer"><small><u>Click to view/hide the original skill table</u></small></summary>');
+  // Write the original table
+  write(vanilla_skill_table.raw());
+  write("</details>");
+
+  // Write everything after the original table
+  write(cleaned_html.substring(vanilla_skill_table_pos + vanilla_skill_table.raw().length()));
 
   // TODO: When the script fails for some reason, we should write a message so that the user knows about it.
 }
