@@ -137,11 +137,13 @@ void main() {
 
   // Find a <table> that contains the "Available skills" text.
   XPathMatch outer_table = xpath_match(page, "//table").containing("Available skills").last();
+  // Find the inner <table> that contains the actual skill icons and buttons.
+  XPathMatch vanilla_skill_table = outer_table.find("//table");
 
   // Iterate through the <tr>s of the *inner* <table> inside the outer <table>
   // and construct a map of trainable skills
   TrainerSkillInfo [skill] trainable_skills;
-  foreach _, table_row in outer_table.find("//table//tr").items() {
+  foreach _, table_row in vanilla_skill_table.find("//tr").items() {
     print(`tr index: {_}`);
     TrainerSkillInfo skill_info = parse_info_from_row(table_row);
     trainable_skills[skill_info.sk] = skill_info;
@@ -159,11 +161,10 @@ void main() {
 
   // To replace the original table, we must find the index of the cleaned HTML:
   string cleaned_html = xpath(page, "/[1]")[0];
-  int index = cleaned_html.index_of(outer_table.raw());
-  print(`Index of outer table: {index}`);
+  int vanilla_skill_table_pos = cleaned_html.index_of(vanilla_skill_table.raw());
 
   // Write everything before the original table
-  write(cleaned_html.substring(0, index));
+  write(cleaned_html.substring(0, vanilla_skill_table_pos));
 
   // 2. Find out which skills have been already purchased/permed
   // 3. Build a pretty table
@@ -223,7 +224,7 @@ void main() {
   writeln("</table>");
 
   // Write the original table, and everything after it
-  write(cleaned_html.substring(index));
+  write(cleaned_html.substring(vanilla_skill_table_pos));
 
   // TODO: When the script fails for some reason, we should write a message so that the user knows about it.
 }
