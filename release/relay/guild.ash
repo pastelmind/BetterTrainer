@@ -119,6 +119,13 @@ string join(string joiner, string [int] fragments) {
 }
 
 
+// Utility function. Replaces the first occurrence of `find` with `replaced`.
+string replace_once(string text, string find, string replaced) {
+  int index = text.index_of(find);
+  return text.substring(0, index) + replaced + text.substring(index + find.length());
+}
+
+
 // Generates the HTML markup of the better skill table for the current
 // character's class.
 string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
@@ -183,6 +190,55 @@ string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
 }
 
 
+// Attempts to fix the markup of KoL's vanilla skill table.
+string unfix_awful_table(XPathMatch table) {
+  buffer table_unfixed;
+  int original_pos = 0;
+
+  // The vanilla table contains <form> tags wrapping a <td> like this:
+  // (Note: This is BAD markup; the browser just tries its best to get by.)
+  //
+  //    <tr>
+  //      <td>...</td>
+  //      <form>
+  //        <td><input type="submit"></td>
+  //      </form>
+  //    </tr>
+  //
+  // xpath() "cleans" this by wrapping the <form> in an outer <td>:
+  //
+  //    <tr>
+  //      <td>...</td>
+  //      <td>        <-- added
+  //        <form>
+  //          <td><input type="submit"></td>
+  //        </form>
+  //      </td>       <-- added
+  //    </tr>
+  //
+  // Unfortunately, this causes Chrome to relocate the inner <td> into the
+  // closest <tr>, creating an extra table cell and breaking the layout.
+  // We prevent this by "un-fixing" the <td>.
+  foreach _, outer_td in table.find("//td[form[td]]").items() {
+    // Copy all markup before the problematic outer <td>
+    int outer_td_pos = table.raw().index_of(outer_td.raw(), original_pos);
+    table_unfixed.append(table.raw().substring(original_pos, outer_td_pos));
+    original_pos = outer_td_pos;
+
+    // Unwrap the form and copy its markup
+    XPathMatch form = outer_td.find("/form");
+    table_unfixed.append(form.raw());
+
+    // Advance the counter to the end of the outer <td>
+    original_pos += outer_td.raw().length();
+  }
+
+  // Copy all remaining markup
+  table_unfixed.append(table.raw().substring(original_pos));
+  return table_unfixed;
+}
+
+
 void main() {
   _debug("Loaded");
 
@@ -230,7 +286,7 @@ void main() {
   write("<details>");
   write('  <summary style="cursor: pointer"><small><u>Click to view/hide the original skill table</u></small></summary>');
   // Write the original table
-  write(vanilla_skill_table.raw());
+  write(unfix_awful_table(vanilla_skill_table));
   write("</details>");
 
   // Write everything after the original table
