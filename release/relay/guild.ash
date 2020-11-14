@@ -224,7 +224,7 @@ void main() {
   //   This is DIFFERENT from the actual skill ID!
 
   // To replace the original table, we must find the index of the cleaned HTML:
-  string cleaned_html = xpath(page, "/[1]")[0];
+  string cleaned_html = xpath_clean_html(page);
   int vanilla_skill_table_pos = cleaned_html.index_of(vanilla_skill_table.raw());
 
   // Write everything before the original table

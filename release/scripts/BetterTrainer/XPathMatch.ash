@@ -148,3 +148,12 @@ XPathMatch first(XPathMatch [int] matches) {
 XPathMatch last(XPathMatch [int] matches) {
   return matches[matches.count() - 1].last();
 }
+
+
+// Utility function
+// This takes advantage of xpath()'s built-in HTML cleaning functionality to
+// "sanitize" a string into a well-formed HTML. It deletes invalid tags and
+// wraps everything in <html><head></head><body></body></html>
+string xpath_clean_html(string fragment) {
+  return xpath(fragment, "/[1]")[0];
+}
