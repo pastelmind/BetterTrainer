@@ -1,4 +1,6 @@
 // Helper script for better handling of XPath
+// This script tries to deal with various limitations of the built-in xpath(),
+// since it only supports a small subset of XPath.
 
 script "XPathMatch";
 

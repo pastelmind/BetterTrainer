@@ -47,7 +47,6 @@ skill [int][int] class_guild_skills(class the_class) {
     // 0 means the skill is a starting skill, and therefore not a guild skill.
     // 1~15 means the skill is a guild skill.
     if (sk.class == the_class && sk.level > 0) {
-      print(`Considering {sk}`);
       // Sanity check, probably unnecessary
       if (sk.traincost <= 0) {
         _debug(`{sk} appears to be a guild skill, but does not have an associated training cost.`);
@@ -86,10 +85,17 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
 
   // Build the skill info record
   string node_img = row_node.find("//img").raw();
+
+  // Check for the existence of a <form>, and use it to determine whether a
+  // skill can be purchased. We could check the character level ourselves, but
+  // it might break if the way skills are unlocked changes in the future
+  // (possibly in some challenge path)
   XPathMatch form = row_node.find("//form");
   string form_action;
   // If the form does not exist, leave the action empty
   if (!form.empty()) form_action = form.find("/@action").raw();
+
+  // Save the hidden inputs and reuse them later in our new skill table
   string [int] hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   return new TrainerSkillInfo(
     the_skill, node_img, node_skill_name.raw(), form_action, hidden_inputs
@@ -190,38 +196,22 @@ void main() {
   _debug("Detected Guild Trainer page");
   buffer page = visit_url();
 
-  // The idea:
-  // 1. Iterate through all skill buttons and icons to extract the list of skills (and their guild cost)
-  // First, select the table
-
-  // Note: As of r20499, xpath() is VERY VERY limited.
-  // It does not support most XPath functions and axes.
-  // Thus, we have to manually identify the index of the node that contains the
-  // substring we're looking for.
+  _debug("Parsing offered guild trainer skills...");
 
   // Find a <table> that contains the "Available skills" text.
   XPathMatch outer_table = xpath_match(page, "//table").containing("Available skills").last();
   // Find the inner <table> that contains the actual skill icons and buttons.
   XPathMatch vanilla_skill_table = outer_table.find("//table");
 
-  // Iterate through the <tr>s of the *inner* <table> inside the outer <table>
+  // Iterate through the <tr>s of the *inner* <table>
   // and construct a map of trainable skills
   TrainerSkillInfo [skill] trainable_skills;
   foreach _, table_row in vanilla_skill_table.find("//tr").items() {
-    print(`tr index: {_}`);
     TrainerSkillInfo skill_info = parse_info_from_row(table_row);
     trainable_skills[skill_info.sk] = skill_info;
   }
 
-  // For each available skill, we need to find several things:
-  // - Skill name and icon
-  // - Skill level
-  // - Skill meat cost
-  // - Whether the skill can be bought or not
-  //   (Comparing the character level ourselves might break the script, if the
-  //    way skills are unlocked changes in some challenge path)
-  // - Skill ID sent to server when the "Buy" button is clicked.
-  //   This is DIFFERENT from the actual skill ID!
+  _debug("Generating improved Guild Trainer page...");
 
   // To replace the original table, we must find the index of the cleaned HTML:
   string cleaned_html = xpath_clean_html(page);
