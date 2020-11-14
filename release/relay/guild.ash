@@ -4,6 +4,7 @@
 // - Repository: https://sourceforge.net/projects/rlbond86-mafia-scripts/
 
 script "BetterTrainer";
+notify "philmasterplus";
 
 import <BetterTrainer/XPathMatch.ash>
 
