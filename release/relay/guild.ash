@@ -113,6 +113,68 @@ string join(string joiner, string [int] fragments) {
 }
 
 
+// Generates the HTML markup of the better skill table for the current
+// character's class.
+string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
+  skill [int][int] guild_skills = class_guild_skills(my_class());
+
+  buffer html;
+  html.append("<table>");
+  html.append("<tbody>");
+
+  foreach level in guild_skills {
+    html.append("<tr>");
+    html.append(`  <td>Level {level}</td>`);
+
+    foreach _, sk in guild_skills[level] {
+      if (trainable_skills contains sk) {
+        // Good, the skill is either buyable or unlockable.
+        TrainerSkillInfo skill_info = trainable_skills[sk];
+
+        html.append(`<td>{skill_info.node_img}</td>`);
+        html.append(`<td>{skill_info.node_skill_name}</td>`);
+        html.append(`<td>`);
+        html.append(`  <form action="{skill_info.form_action}" style="margin: 0">`);
+        if (skill_info.form_action.length() > 0) {
+          // The form action exists, and the button is usable
+          html.append(`    <button class="button" type="submit">`);
+        } else {
+          // Skill cannot be purchased because your level is too low.
+          // The form action does not exist, and the button is unusable
+          html.append(`    <button class="button" type="submit" disabled style="color: #cccccc">`);
+        }
+        html.append(`      Buy<br><span style="font-size: 75%">{to_string(sk.traincost, "%,d")} meat</span>`);
+        html.append(`    </button>`);
+        html.append(`    {"".join(skill_info.hidden_inputs)}`);
+        html.append(`  </form>`);
+        html.append(`</td>`);
+      } else {
+        // The vanilla trainer page does NOT provide link and images
+        // TODO: Generate our own links
+        html.append(`<td><img src="/images/itemimages/{sk.image}"></td>`);
+        html.append(`<td>{sk}</td>`);
+        html.append(`<td>`);
+        if (have_skill(sk)) {
+          // You already bought or permed the skill
+          html.append(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
+        } else {
+          // The guild store doesn't display the skill for unknown reason
+          html.append(`  <button class="button" type="submit" disabled style="color: #cccccc">N/A</button>`);
+        }
+        html.append(`</td>`);
+      }
+    }
+
+    html.append("</tr>");
+  }
+
+  html.append("</tbody>");
+  html.append("</table>");
+
+  return html;
+}
+
+
 void main() {
   _debug("Loaded");
 
@@ -166,62 +228,8 @@ void main() {
   // Write everything before the original table
   write(cleaned_html.substring(0, vanilla_skill_table_pos));
 
-  // 2. Find out which skills have been already purchased/permed
-  // 3. Build a pretty table
-
-  skill [int][int] guild_skills = class_guild_skills(my_class());
-
-  writeln("<table>");
-  writeln("<tbody>");
-
-  foreach level in guild_skills {
-    writeln("<tr>");
-    writeln(`  <td>Level {level}</td>`);
-
-    foreach _, sk in guild_skills[level] {
-      if (trainable_skills contains sk) {
-        // Good, the skill is either buyable or unlockable.
-        TrainerSkillInfo skill_info = trainable_skills[sk];
-
-        writeln(`<td>{skill_info.node_img}</td>`);
-        writeln(`<td>{skill_info.node_skill_name}</td>`);
-        writeln(`<td>`);
-        writeln(`  <form action="{skill_info.form_action}" style="margin: 0">`);
-        if (skill_info.form_action.length() > 0) {
-          // The form action exists, and the button is usable
-          writeln(`    <button class="button" type="submit">`);
-        } else {
-          // Skill cannot be purchased because your level is too low.
-          // The form action does not exist, and the button is unusable
-          writeln(`    <button class="button" type="submit" disabled style="color: #cccccc">`);
-        }
-        writeln(`      Buy<br><span style="font-size: 75%">{to_string(sk.traincost, "%,d")} meat</span>`);
-        writeln(`    </button>`);
-        writeln(`    {"".join(skill_info.hidden_inputs)}`);
-        writeln(`  </form>`);
-        writeln(`</td>`);
-      } else {
-        // The vanilla trainer page does NOT provide link and images
-        // TODO: Generate our own links
-        writeln(`<td><img src="/images/itemimages/{sk.image}"></td>`);
-        writeln(`<td>{sk}</td>`);
-        writeln(`<td>`);
-        if (have_skill(sk)) {
-          // You already bought or permed the skill
-          writeln(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
-        } else {
-          // The guild store doesn't display the skill for unknown reason
-          writeln(`  <button class="button" type="submit" disabled style="color: #cccccc">N/A</button>`);
-        }
-        writeln(`</td>`);
-      }
-    }
-
-    writeln("</tr>");
-  }
-
-  writeln("</tbody>");
-  writeln("</table>");
+  // Insert our pretty table
+  write(generate_skill_table(trainable_skills));
 
   // Write the original table, and everything after it
   write(cleaned_html.substring(vanilla_skill_table_pos));
