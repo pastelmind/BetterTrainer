@@ -267,55 +267,6 @@ string generate_skill_table(
 }
 
 
-// Attempts to fix the markup of KoL's vanilla skill table.
-string unfix_awful_table(XPathMatch table) {
-  buffer table_unfixed;
-  int original_pos = 0;
-
-  // The vanilla table contains <form> tags wrapping a <td> like this:
-  // (Note: This is BAD markup; the browser just tries its best to get by.)
-  //
-  //    <tr>
-  //      <td>...</td>
-  //      <form>
-  //        <td><input type="submit"></td>
-  //      </form>
-  //    </tr>
-  //
-  // xpath() "cleans" this by wrapping the <form> in an outer <td>:
-  //
-  //    <tr>
-  //      <td>...</td>
-  //      <td>        <-- added
-  //        <form>
-  //          <td><input type="submit"></td>
-  //        </form>
-  //      </td>       <-- added
-  //    </tr>
-  //
-  // Unfortunately, this causes Chrome to relocate the inner <td> into the
-  // closest <tr>, creating an extra table cell and breaking the layout.
-  // We prevent this by "un-fixing" the <td>.
-  foreach _, outer_td in table.find("//td[form[td]]").items() {
-    // Copy all markup before the problematic outer <td>
-    int outer_td_pos = table.raw().index_of(outer_td.raw(), original_pos);
-    table_unfixed.append(table.raw().substring(original_pos, outer_td_pos));
-    original_pos = outer_td_pos;
-
-    // Unwrap the form and copy its markup
-    XPathMatch form = outer_td.find("/form");
-    table_unfixed.append(form.raw());
-
-    // Advance the counter to the end of the outer <td>
-    original_pos += outer_td.raw().length();
-  }
-
-  // Copy all remaining markup
-  table_unfixed.append(table.raw().substring(original_pos));
-  return table_unfixed;
-}
-
-
 void main() {
   _debug("Loaded");
 
@@ -331,27 +282,32 @@ void main() {
 
   _debug("Parsing offered guild trainer skills...");
 
-  // Find a <table> that contains the "Available skills" text.
-  XPathMatch outer_table = xpath_match(page, "//table").containing("Available skills").last();
-  // Find the inner <table> that contains the actual skill icons and buttons.
-  XPathMatch vanilla_skill_table = outer_table.find("//table");
+  // Locate the skill table, which is below the "Available skills" text
+  // Note: We choose not to use xpath() to extract the outer skill table,
+  // because it tries to "clean" bad HTML markup and modifies it. It would
+  // prevent us from selectively replacing parts of the page.
+  matcher skill_table_matcher = create_matcher(
+    "Available skills:[\\s\\S]*?(<table[\\s\\S]*?</table>)", page
+  );
+  if (!skill_table_matcher.find()) {
+    _error("Cannot find the skill table");
+  }
+  string vanilla_skill_table = skill_table_matcher.group(1);
+  int vanilla_skill_table_start = skill_table_matcher.start(1);
+  int vanilla_skill_table_end = skill_table_matcher.end(1);
 
   // Iterate through the <tr>s of the *inner* <table>
   // and construct a map of trainable skills
   TrainerSkillInfo [skill] trainable_skills;
-  foreach _, table_row in vanilla_skill_table.find("//tr").items() {
+  foreach _, table_row in xpath_match(vanilla_skill_table, "//tr").items() {
     TrainerSkillInfo skill_info = parse_info_from_row(table_row);
     trainable_skills[skill_info.sk] = skill_info;
   }
 
   _debug("Generating improved Guild Trainer page...");
 
-  // To replace the original table, we must find the index of the cleaned HTML:
-  string cleaned_html = xpath_clean_html(page);
-  int vanilla_skill_table_pos = cleaned_html.index_of(vanilla_skill_table.raw());
-
   // Write everything before the original table
-  write(cleaned_html.substring(0, vanilla_skill_table_pos));
+  write(page.substring(0, vanilla_skill_table_start));
 
   // Insert our pretty table
   string charsheet = visit_url("charsheet.php");
@@ -365,11 +321,11 @@ void main() {
   write("<details>");
   write('  <summary style="cursor: pointer"><small><u>Click to view/hide the original skill table</u></small></summary>');
   // Write the original table
-  write(unfix_awful_table(vanilla_skill_table));
+  write(vanilla_skill_table);
   write("</details>");
 
   // Write everything after the original table
-  write(cleaned_html.substring(vanilla_skill_table_pos + vanilla_skill_table.raw().length()));
+  write(page.substring(vanilla_skill_table_end));
 
   // TODO: When the script fails for some reason, we should write a message so that the user knows about it.
 }
