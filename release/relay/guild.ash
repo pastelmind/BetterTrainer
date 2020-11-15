@@ -244,9 +244,15 @@ string generate_button(skill sk, boolean is_available, boolean is_enabled) {
 
   if (is_available) {
     // Skill can be (eventually) purchased
-    // pointer-events: none is needed to prevent the mousedown handler from triggering
     button.appendln(`        Train<br>`);
-    button.appendln(`        <span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
+
+    string cost_style;
+    if (my_meat() < sk.traincost) {
+      // If I can't afford to buy this skill, show red text for the cost
+      cost_style = `color: {is_enabled ? "#ff3333" : "#ff9999"}`;
+    }
+    // pointer-events: none is needed to prevent the mousedown handler from triggering
+    button.appendln(`        <span style="font-size: 75%; pointer-events: none; {cost_style}">{to_string(sk.traincost, "%,d")} meat</span>`);
   } else {
     // The guild store doesn't display the skill for unknown reason
     button.appendln(`        N/A`);
