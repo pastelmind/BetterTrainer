@@ -233,7 +233,7 @@ string generate_skill_table(
           // The form action does not exist, and the button is unusable
           html.append(`    <button class="button" type="submit" disabled style="min-width: 5.5em; color: #cccccc">`);
         }
-        html.append(`      Buy<br><span style="font-size: 75%">{to_string(sk.traincost, "%,d")} meat</span>`);
+        html.append(`      Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
         html.append(`    </button>`);
         html.append(`    {"".join(skill_info.hidden_inputs)}`);
         html.append(`  </form>`);
