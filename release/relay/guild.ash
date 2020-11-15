@@ -277,7 +277,7 @@ string generate_skill_table(
 
   foreach level in guild_skills {
     html.appendln("<tr>");
-    html.appendln(`  <td class="small" style="text-align: right; padding-right: .5em">Level {level})</td>`);
+    html.appendln(`  <td class="small" style="text-align: right">Level {level})</td>`);
 
     foreach _, sk in guild_skills[level] {
       // Generate clickable icon and skill name links
@@ -288,7 +288,7 @@ string generate_skill_table(
       // break for other cells.
       // Also, we have a "show original skill table" link just in case.
       string onclick = `poop('desc_skill.php?whichskill={to_int(sk)}&self=true', 'skill', 350, 300)`;
-      html.appendln(`  <td><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
+      html.appendln(`  <td style="padding-left: .5em"><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
       string perm_info_blurb = make_perm_info_blurb(perm_info[sk]);
       html.appendln(`  <td><b onclick="{onclick}" style="cursor: pointer">{sk}</b>{perm_info_blurb}</td>`);
 
