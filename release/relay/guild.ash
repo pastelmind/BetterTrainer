@@ -312,14 +312,17 @@ void main() {
   // and construct a map of trainable skills
   TrainerSkillInfo [skill] trainable_skills = parse_trainer_skills(vanilla_skill_table);
 
+  _debug("Retrieving permed skills...");
+
+  string charsheet = visit_url("charsheet.php");
+  string [skill] perm_info = parse_permed_skills(charsheet);
+
   _debug("Generating improved Guild Trainer page...");
 
   // Write everything before the original table
   write(page.substring(0, vanilla_skill_table_start));
 
   // Insert our pretty table
-  string charsheet = visit_url("charsheet.php");
-  string [skill] perm_info = parse_permed_skills(charsheet);
   write(generate_skill_table(trainable_skills, perm_info));
 
   // Write a <hr> to separate the new table from the old one
