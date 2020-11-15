@@ -59,6 +59,8 @@ record TrainerSkillInfo {
   string node_img;
   // Skill name node (<a> element)
   string node_skill_name;
+  // Whether the Buy button is enabled
+  boolean is_enabled;
   // Attributes of the associated <form> element
   string form_attributes;
   // Any associated <input type="hidden"> elements
@@ -92,25 +94,33 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
   // Build the skill info record
   string node_img = row_node.find("//img").raw();
 
+  boolean is_enabled = false;
+  string form_attributes;
   // Check for the existence of a <form>, and use it to determine whether a
   // skill can be purchased. We could check the character level ourselves, but
   // it might break if the way skills are unlocked changes in the future
   // (possibly in some challenge path)
   XPathMatch form = row_node.find("//form");
-  string form_attributes;
-  // If the form does not exist, leave the attributes empty
+  // If the form exists, it means the skill can be purchased now
   if (!form.empty()) {
     matcher form_attr_matcher = create_matcher("<form([\\s\\S]*?)>", form.raw());
     if (!form_attr_matcher.find()) {
       _error(`Cannot extract form attributes from: {form.raw()}`);
     }
+
+    is_enabled = true;
     form_attributes = form_attr_matcher.group(1);
   }
 
   // Save the hidden inputs and reuse them later in our new skill table
   string [int] hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   return new TrainerSkillInfo(
-    the_skill, node_img, node_skill_name.raw(), form_attributes, hidden_inputs
+    the_skill,
+    node_img,
+    node_skill_name.raw(),
+    is_enabled,
+    form_attributes,
+    hidden_inputs
   );
 }
 
@@ -249,12 +259,11 @@ string generate_skill_table(
         html.appendln(`  <td><b style="cursor: pointer">{skill_info.node_skill_name}</b>{perm_info_blurb}</td>`);
         html.appendln(`  <td>`);
         html.appendln(`    <form {skill_info.form_attributes} style="margin: 0">`);
-        if (skill_info.form_attributes.length() > 0) {
-          // The form action exists, and the button is usable
+        if (skill_info.is_enabled) {
+          // Skill can be purchased
           html.appendln(`      <button class="button" type="submit" style="min-width: 5.5em">`);
         } else {
           // Skill cannot be purchased because your level is too low.
-          // The form action does not exist, and the button is unusable
           html.appendln(`      <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
         }
         html.appendln(`        Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
