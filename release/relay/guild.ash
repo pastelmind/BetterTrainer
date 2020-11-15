@@ -327,5 +327,5 @@ void main() {
   // Write everything after the original table
   write(page.substring(vanilla_skill_table_end));
 
-  // TODO: When the script fails for some reason, we should write a message so that the user knows about it.
+  _debug("Finished generating page.");
 }
