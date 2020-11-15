@@ -127,9 +127,78 @@ string replace_once(string text, string find, string replaced) {
 }
 
 
+// Parses the contents of charsheet.php and extracts your permed skills.
+// Value of "P" means the skill is (softcore) permanent.
+// Value of "HP" means the skill is hardcore permanent.
+// A value not in the map means the skill is not permed.
+string [skill] parse_permed_skills(string charsheet) {
+  // Extract the first <table> after the text "Skills:"
+  matcher skill_table_matcher = create_matcher(
+    "Skills:[\\s\\S]*?(<table[\\s\\S]*?</table>)", charsheet
+  );
+  if (!skill_table_matcher.find()) {
+    _error("parse_permed_skills(): Cannot match the skill table. Update the script or ask the author for more info.");
+  }
+  string skill_table = skill_table_matcher.group(1);
+
+  string [skill] permed_skills;
+
+  skill current_skill = $skill[ none ];
+  // This XPath selector neatly splits the contents of all table cells, such
+  // that the tokens look like:
+  //
+  //    "Unpermed skill name", "", "Permed skill name", "HP", "", ...
+  //
+  // We will iterate through each and build a map of permed skills.
+  foreach _, skill_name_or_perm_status in xpath(skill_table, "//td/*/text()") {
+    if (skill_name_or_perm_status == "") {
+      // Ignore blank cells
+      continue;
+    } else if (skill_name_or_perm_status == "P" || skill_name_or_perm_status == "HP") {
+      string perm_status = skill_name_or_perm_status;
+
+      if (current_skill == $skill[ none ]) {
+        _debug(`parse_permed_skills(): Unpaired perm status token found ("{perm_status}"). This will be ignored.`);
+      } else {
+        permed_skills[current_skill] = perm_status;
+        // Reset the current skill
+        current_skill = $skill[ none ];
+      }
+    } else {
+      string skill_name = skill_name_or_perm_status;
+      current_skill = to_skill(skill_name);
+      if (current_skill == $skill[ none ]) {
+        _error(`parse_permed_skills(): Unrecognized skill name: {skill_name}`);
+      }
+    }
+  }
+
+  return permed_skills;
+}
+
+
+// If the skill is permed, generate a HTML fragment containing the perm info blurb.
+// Otherwise, return an empty string.
+string make_perm_info_blurb(string perm_status) {
+  // Note: Use a <div> to put the blurb on a separate line under the skill name.
+  if (perm_status == "") {
+    return "";
+  } else if (perm_status == "P") {
+    return `<div style="font-size: 50%; color: #009900">Softcore permed skill</div>`;
+  } else if (perm_status == "HP") {
+    return `<div style="font-size: 50%; color: #0000cc">Hardcore permed skill</div>`;
+  }
+
+  _error(`make_perm_info_blurb(): Unexpected perm status: {perm_status}`);
+  return "NOT_REACHED"; // Dummy return statement
+}
+
+
 // Generates the HTML markup of the better skill table for the current
 // character's class.
-string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
+string generate_skill_table(
+  TrainerSkillInfo [skill] trainable_skills, string [skill] perm_info
+) {
   skill [int][int] guild_skills = class_guild_skills(my_class());
 
   buffer html;
@@ -141,12 +210,14 @@ string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
     html.append(`  <td class="small" style="text-align: right; padding-right: .5em">Level {level})</td>`);
 
     foreach _, sk in guild_skills[level] {
+      string perm_info_blurb = make_perm_info_blurb(perm_info[sk]);
+
       if (trainable_skills contains sk) {
         // Good, the skill is either buyable or unlockable.
         TrainerSkillInfo skill_info = trainable_skills[sk];
 
         html.append(`<td><span style="cursor: pointer">{skill_info.node_img}</span></td>`);
-        html.append(`<td><b style="cursor: pointer">{skill_info.node_skill_name}</b></td>`);
+        html.append(`<td><b style="cursor: pointer">{skill_info.node_skill_name}</b>{perm_info_blurb}</td>`);
         html.append(`<td>`);
         html.append(`  <form action="{skill_info.form_action}" style="margin: 0">`);
         if (skill_info.form_action.length() > 0) {
@@ -168,7 +239,7 @@ string generate_skill_table(TrainerSkillInfo [skill] trainable_skills) {
         // (This may break if KoL changes the guild trainer in the future)
         string onclick = `poop('desc_skill.php?whichskill={to_int(sk)}&self=true', 'skill', 350, 300)`;
         html.append(`<td><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
-        html.append(`<td><b onclick="{onclick}" style="cursor: pointer">{sk}</b></td>`);
+        html.append(`<td><b onclick="{onclick}" style="cursor: pointer">{sk}</b>{perm_info_blurb}</td>`);
         html.append(`<td>`);
         if (have_skill(sk)) {
           // You already bought or permed the skill
@@ -278,7 +349,9 @@ void main() {
   write(cleaned_html.substring(0, vanilla_skill_table_pos));
 
   // Insert our pretty table
-  write(generate_skill_table(trainable_skills));
+  string charsheet = visit_url("charsheet.php");
+  string [skill] perm_info = parse_permed_skills(charsheet);
+  write(generate_skill_table(trainable_skills, perm_info));
 
   // Write a <hr> to separate the new table from the old one
   write("<hr>");
