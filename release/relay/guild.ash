@@ -59,8 +59,8 @@ record TrainerSkillInfo {
   string node_img;
   // Skill name node (<a> element)
   string node_skill_name;
-  // action of the associated <form> element
-  string form_action;
+  // Attributes of the associated <form> element
+  string form_attributes;
   // Any associated <input type="hidden"> elements
   string [int] hidden_inputs;
 };
@@ -97,14 +97,20 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
   // it might break if the way skills are unlocked changes in the future
   // (possibly in some challenge path)
   XPathMatch form = row_node.find("//form");
-  string form_action;
-  // If the form does not exist, leave the action empty
-  if (!form.empty()) form_action = form.find("/@action").raw();
+  string form_attributes;
+  // If the form does not exist, leave the attributes empty
+  if (!form.empty()) {
+    matcher form_attr_matcher = create_matcher("<form([\\s\\S]*?)>", form.raw());
+    if (!form_attr_matcher.find()) {
+      _error(`Cannot extract form attributes from: {form.raw()}`);
+    }
+    form_attributes = form_attr_matcher.group(1);
+  }
 
   // Save the hidden inputs and reuse them later in our new skill table
   string [int] hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   return new TrainerSkillInfo(
-    the_skill, node_img, node_skill_name.raw(), form_action, hidden_inputs
+    the_skill, node_img, node_skill_name.raw(), form_attributes, hidden_inputs
   );
 }
 
@@ -236,8 +242,8 @@ string generate_skill_table(
         html.append(`<td><span style="cursor: pointer">{skill_info.node_img}</span></td>`);
         html.append(`<td><b style="cursor: pointer">{skill_info.node_skill_name}</b>{perm_info_blurb}</td>`);
         html.append(`<td>`);
-        html.append(`  <form action="{skill_info.form_action}" style="margin: 0">`);
-        if (skill_info.form_action.length() > 0) {
+        html.append(`  <form {skill_info.form_attributes} style="margin: 0">`);
+        if (skill_info.form_attributes.length() > 0) {
           // The form action exists, and the button is usable
           html.append(`    <button class="button" type="submit" style="min-width: 5.5em">`);
         } else {
