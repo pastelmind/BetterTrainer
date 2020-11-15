@@ -96,6 +96,8 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
 
   boolean is_enabled = false;
   string form_attributes;
+  string [int] hidden_inputs;
+
   // Check for the existence of a <form>, and use it to determine whether a
   // skill can be purchased. We could check the character level ourselves, but
   // it might break if the way skills are unlocked changes in the future
@@ -110,10 +112,10 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
 
     is_enabled = true;
     form_attributes = form_attr_matcher.group(1);
+    // Save the hidden inputs and reuse them later in our new skill table
+    hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   }
 
-  // Save the hidden inputs and reuse them later in our new skill table
-  string [int] hidden_inputs = row_node.find("//input[@type='hidden']").nodes;
   return new TrainerSkillInfo(
     the_skill,
     node_img,
