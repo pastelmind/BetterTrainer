@@ -234,6 +234,30 @@ buffer appendln(buffer text, string to_append) {
 }
 
 
+// Generate the markup for the Train <button>
+string generate_button(skill sk, boolean is_available, boolean is_enabled) {
+  buffer button;
+
+  string disabled_attr = is_enabled ? "" : "disabled";
+  string disabled_style = is_enabled ? "" : "color: #cccccc; border-color: #cccccc;";
+  button.appendln(`      <button class="button" type="submit" {disabled_attr} style="min-width: 5.5em; {disabled_style}">`);
+
+  if (is_available) {
+    // Skill can be (eventually) purchased
+    // pointer-events: none is needed to prevent the mousedown handler from triggering
+    button.appendln(`        Train<br>`);
+    button.appendln(`        <span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
+  } else {
+    // The guild store doesn't display the skill for unknown reason
+    button.appendln(`        N/A`);
+  }
+
+  button.append(`      </button>`);
+
+  return button;
+}
+
+
 // Generates the HTML markup of the better skill table for the current
 // character's class.
 string generate_skill_table(
@@ -250,8 +274,6 @@ string generate_skill_table(
     html.appendln(`  <td class="small" style="text-align: right; padding-right: .5em">Level {level})</td>`);
 
     foreach _, sk in guild_skills[level] {
-      string BUTTON_DISABLED_STYLE = "color: #cccccc; border-color: #cccccc;";
-
       // Generate clickable icon and skill name links
       // Note: We choose to always write our own onclick handler instead of
       // trying to reuse the KoL's onclick handler.
@@ -270,15 +292,7 @@ string generate_skill_table(
         // Good, the skill is either buyable or unlockable.
         TrainerSkillInfo skill_info = trainable_skills[sk];
         html.appendln(`    <form {skill_info.form_attributes} style="margin: 0">`);
-        if (skill_info.is_enabled) {
-          // Skill can be purchased
-          html.appendln(`      <button class="button" type="submit" style="min-width: 5.5em">`);
-        } else {
-          // Skill cannot be purchased because your level is too low.
-          html.appendln(`      <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
-        }
-        html.appendln(`        Train<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
-        html.appendln(`      </button>`);
+        html.appendln(generate_button(sk, true, skill_info.is_enabled));
         html.appendln(`      {"".join(skill_info.hidden_inputs)}`);
         html.appendln(`    </form>`);
       } else {
@@ -287,7 +301,7 @@ string generate_skill_table(
           html.appendln(`    <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
         } else {
           // The guild store doesn't display the skill for unknown reason
-          html.appendln(`    <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">N/A</button>`);
+          html.appendln(generate_button(sk, false, false));
         }
       }
       html.appendln(`  </td>`);
