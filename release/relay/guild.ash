@@ -249,7 +249,7 @@ string generate_button(skill sk, boolean is_available, boolean is_enabled) {
     string cost_style;
     if (my_meat() < sk.traincost) {
       // If I can't afford to buy this skill, show red text for the cost
-      cost_style = `color: {is_enabled ? "#ff3333" : "#ff9999"}`;
+      cost_style = `color: {is_enabled ? "#cc0000" : "#cc9999"}`;
     }
     // pointer-events: none is needed to prevent the mousedown handler from triggering
     button.appendln(`        <span style="font-size: 75%; pointer-events: none; {cost_style}">{to_string(sk.traincost, "%,d")} meat</span>`);
