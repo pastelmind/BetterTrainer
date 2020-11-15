@@ -27,20 +27,6 @@ void _error(string msg) {
 }
 
 
-// Represents a purchaseable skill info
-record TrainerSkillInfo {
-  skill sk;
-  // Skill icon node (<img> element)
-  string node_img;
-  // Skill name node (<a> element)
-  string node_skill_name;
-  // action of the associated <form> element
-  string form_action;
-  // Any associated <input type="hidden"> elements
-  string [int] hidden_inputs;
-};
-
-
 // Retrieves the guild skill data for the given class.
 // The returned mapping contains an array of skills for each level.
 // This uses KoLmafia's internal data.
@@ -64,6 +50,20 @@ skill [int][int] class_guild_skills(class the_class) {
 
   return guild_skills;
 }
+
+
+// Represents a purchaseable skill info
+record TrainerSkillInfo {
+  skill sk;
+  // Skill icon node (<img> element)
+  string node_img;
+  // Skill name node (<a> element)
+  string node_skill_name;
+  // action of the associated <form> element
+  string form_action;
+  // Any associated <input type="hidden"> elements
+  string [int] hidden_inputs;
+};
 
 
 // Extracts a trainer skill info record by parsing a <tr> node.
