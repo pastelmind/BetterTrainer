@@ -11,14 +11,19 @@ import <BetterTrainer/XPathMatch.ash>
 
 boolean __DEBUG__ = true;
 
+// Returns the current (system) time down to milliseconds. Used for debug messages.
+string _debug_time() {
+  return now_to_string("HH:mm:ss.SSS z");
+}
+
 // Prints a debug message to the CLI
 void _debug(string msg) {
-  if (__DEBUG__) print(`[relay/guild.ash][{time_to_string()}] {msg}`);
+  if (__DEBUG__) print(`[relay/guild.ash][{_debug_time()}] {msg}`);
 }
 
 // Prints a debug message to the CLI and aborts the script
 void _error(string msg) {
-  abort(`[relay/guild.ash][{time_to_string()}] ERROR: {msg}`);
+  abort(`[relay/guild.ash][{_debug_time()}] ERROR: {msg}`);
 }
 
 
