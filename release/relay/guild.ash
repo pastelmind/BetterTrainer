@@ -216,6 +216,7 @@ string generate_skill_table(
 
     foreach _, sk in guild_skills[level] {
       string perm_info_blurb = make_perm_info_blurb(perm_info[sk]);
+      string BUTTON_DISABLED_STYLE = "color: #cccccc; border-color: #cccccc;";
 
       if (trainable_skills contains sk) {
         // Good, the skill is either buyable or unlockable.
@@ -231,7 +232,7 @@ string generate_skill_table(
         } else {
           // Skill cannot be purchased because your level is too low.
           // The form action does not exist, and the button is unusable
-          html.append(`    <button class="button" type="submit" disabled style="min-width: 5.5em; color: #cccccc; border-color: #cccccc">`);
+          html.append(`    <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
         }
         html.append(`      Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
         html.append(`    </button>`);
@@ -251,7 +252,7 @@ string generate_skill_table(
           html.append(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
         } else {
           // The guild store doesn't display the skill for unknown reason
-          html.append(`  <button class="button" type="submit" disabled style="min-width: 5.5em; color: #cccccc">N/A</button>`);
+          html.append(`  <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">N/A</button>`);
         }
         html.append(`</td>`);
       }
