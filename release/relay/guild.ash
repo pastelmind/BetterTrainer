@@ -245,39 +245,39 @@ string generate_skill_table(
         // Good, the skill is either buyable or unlockable.
         TrainerSkillInfo skill_info = trainable_skills[sk];
 
-        html.appendln(`<td><span style="cursor: pointer">{skill_info.node_img}</span></td>`);
-        html.appendln(`<td><b style="cursor: pointer">{skill_info.node_skill_name}</b>{perm_info_blurb}</td>`);
-        html.appendln(`<td>`);
-        html.appendln(`  <form {skill_info.form_attributes} style="margin: 0">`);
+        html.appendln(`  <td><span style="cursor: pointer">{skill_info.node_img}</span></td>`);
+        html.appendln(`  <td><b style="cursor: pointer">{skill_info.node_skill_name}</b>{perm_info_blurb}</td>`);
+        html.appendln(`  <td>`);
+        html.appendln(`    <form {skill_info.form_attributes} style="margin: 0">`);
         if (skill_info.form_attributes.length() > 0) {
           // The form action exists, and the button is usable
-          html.appendln(`    <button class="button" type="submit" style="min-width: 5.5em">`);
+          html.appendln(`      <button class="button" type="submit" style="min-width: 5.5em">`);
         } else {
           // Skill cannot be purchased because your level is too low.
           // The form action does not exist, and the button is unusable
-          html.appendln(`    <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
+          html.appendln(`      <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
         }
-        html.appendln(`      Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
-        html.appendln(`    </button>`);
-        html.appendln(`    {"".join(skill_info.hidden_inputs)}`);
-        html.appendln(`  </form>`);
-        html.appendln(`</td>`);
+        html.appendln(`        Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
+        html.appendln(`      </button>`);
+        html.appendln(`      {"".join(skill_info.hidden_inputs)}`);
+        html.appendln(`    </form>`);
+        html.appendln(`  </td>`);
       } else {
         // The vanilla trainer page does NOT provide link and images
         // Thus, we have to generate our own links
         // (This may break if KoL changes the guild trainer in the future)
         string onclick = `poop('desc_skill.php?whichskill={to_int(sk)}&self=true', 'skill', 350, 300)`;
-        html.appendln(`<td><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
-        html.appendln(`<td><b onclick="{onclick}" style="cursor: pointer">{sk}</b>{perm_info_blurb}</td>`);
-        html.appendln(`<td>`);
+        html.appendln(`  <td><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
+        html.appendln(`  <td><b onclick="{onclick}" style="cursor: pointer">{sk}</b>{perm_info_blurb}</td>`);
+        html.appendln(`  <td>`);
         if (have_skill(sk)) {
           // You already bought or permed the skill
-          html.appendln(`  <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
+          html.appendln(`    <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
         } else {
           // The guild store doesn't display the skill for unknown reason
-          html.appendln(`  <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">N/A</button>`);
+          html.appendln(`    <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">N/A</button>`);
         }
-        html.appendln(`</td>`);
+        html.appendln(`  </td>`);
       }
     }
 
