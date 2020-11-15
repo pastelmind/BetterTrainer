@@ -109,6 +109,17 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
 }
 
 
+// Parse the vanilla guild trainer skill table and extract skill information.
+TrainerSkillInfo [skill] parse_trainer_skills(string skill_table) {
+  TrainerSkillInfo [skill] trainer_skills;
+  foreach _, table_row in xpath_match(skill_table, "//tr").items() {
+    TrainerSkillInfo skill_info = parse_info_from_row(table_row);
+    trainer_skills[skill_info.sk] = skill_info;
+  }
+  return trainer_skills;
+}
+
+
 // Utility function
 string join(string joiner, string [int] fragments) {
   buffer joined;
@@ -299,11 +310,7 @@ void main() {
 
   // Iterate through the <tr>s of the *inner* <table>
   // and construct a map of trainable skills
-  TrainerSkillInfo [skill] trainable_skills;
-  foreach _, table_row in xpath_match(vanilla_skill_table, "//tr").items() {
-    TrainerSkillInfo skill_info = parse_info_from_row(table_row);
-    trainable_skills[skill_info.sk] = skill_info;
-  }
+  TrainerSkillInfo [skill] trainable_skills = parse_trainer_skills(vanilla_skill_table);
 
   _debug("Generating improved Guild Trainer page...");
 
