@@ -59,7 +59,7 @@ record TrainerSkillInfo {
   string node_img;
   // Skill name node (<a> element)
   string node_skill_name;
-  // Whether the Buy button is enabled
+  // Whether the Train button is enabled
   boolean is_enabled;
   // Attributes of the associated <form> element
   string form_attributes;
@@ -266,7 +266,7 @@ string generate_skill_table(
           // Skill cannot be purchased because your level is too low.
           html.appendln(`      <button class="button" type="submit" disabled style="min-width: 5.5em; {BUTTON_DISABLED_STYLE}">`);
         }
-        html.appendln(`        Buy<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
+        html.appendln(`        Train<br><span style="font-size: 75%; pointer-events: none">{to_string(sk.traincost, "%,d")} meat</span>`);
         html.appendln(`      </button>`);
         html.appendln(`      {"".join(skill_info.hidden_inputs)}`);
         html.appendln(`    </form>`);
