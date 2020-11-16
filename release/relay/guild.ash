@@ -198,6 +198,13 @@ string replace_once(string text, string find, string replaced) {
 }
 
 
+// Utility function
+// Uses XPath to strip all HTML tags from the markup, leaving only text
+string _xpath_strip_html(string markup) {
+  return xpath(markup, "text()")[0];
+}
+
+
 // Parses the contents of charsheet.php and extracts your permed skills.
 // Value of "P" means the skill is (softcore) permanent.
 // Value of "HP" means the skill is hardcore permanent.
@@ -212,35 +219,50 @@ string [skill] parse_permed_skills(string charsheet) {
   }
   string skill_table = skill_table_matcher.group(1);
 
+  // Since we're already using a regular expression to match the cell AND extract
+  // its cell contents, we don't need to use xpath() here.
+  // Note: We can't use the "one or more" quantifier (+) to exclude empty cells
+  // here, because regex is dumb and tries to parse two cells as a single cell.
+  //
+  //    <td></td><td></td>    --> If we use "+" quantifier, the regex will parse
+  //                              this as <td> ( </td><td> ) </td>!!
+  matcher table_cell_matcher = create_matcher(
+    "<td[^>]*>([\\s\\S]*?)</td>", skill_table
+  );
+  matcher perm_status_matcher = create_matcher("\\s*\\((P|HP)\\)$", "");
+
   string [skill] permed_skills;
+  while (table_cell_matcher.find()) {
+    string cell_content = table_cell_matcher.group(1);
 
-  skill current_skill = $skill[ none ];
-  // This XPath selector neatly splits the contents of all table cells, such
-  // that the tokens look like:
-  //
-  //    "Unpermed skill name", "", "Permed skill name", "HP", "", ...
-  //
-  // We will iterate through each and build a map of permed skills.
-  foreach _, skill_name_or_perm_status in xpath(skill_table, "//td/*/text()") {
-    if (skill_name_or_perm_status == "") {
-      // Ignore blank cells
-      continue;
-    } else if (skill_name_or_perm_status == "P" || skill_name_or_perm_status == "HP") {
-      string perm_status = skill_name_or_perm_status;
+    // Some table rows are empty, while others contain help text
+    // We are mainly interested in cells that contain a list of skill names,
+    // each name followed by (P) or (HP) and separated by <br>.
+    foreach _, token in cell_content.split_string("<br>") {
+      // Strip all tags from the markup
+      string text = _xpath_strip_html(token);
 
-      if (current_skill == $skill[ none ]) {
-        _debug(`parse_permed_skills(): Unpaired perm status token found ("{perm_status}"). This will be ignored.`);
-      } else {
-        permed_skills[current_skill] = perm_status;
-        // Reset the current skill
-        current_skill = $skill[ none ];
+      // Ignore empty text and blurbs
+      if (
+        text == ""
+        || text.contains_text("show permanent skills you can't use right now")
+        || text.contains_text("(P) = Permanent skill")
+        || text.contains_text("(HP) = Hardcore Permanent skill")
+      ) {
+        continue;
       }
-    } else {
-      string skill_name = skill_name_or_perm_status;
-      current_skill = to_skill(skill_name);
-      if (current_skill == $skill[ none ]) {
+
+      // If the text doesn't have the skill perm status, ignore it
+      if (!perm_status_matcher.reset(text).find()) continue;
+
+      string perm_status = perm_status_matcher.group(1);
+      string skill_name = perm_status_matcher.replace_first("");
+      skill sk = to_skill(skill_name);
+      if (sk == $skill[ none ]) {
         _error(`parse_permed_skills(): Unrecognized skill name: {skill_name}`);
       }
+
+      permed_skills[sk] = perm_status;
     }
   }
 
