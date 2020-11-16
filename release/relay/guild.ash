@@ -27,6 +27,40 @@ void _error(string msg) {
 }
 
 
+// @internal
+// Returns a character version of the given entity token.
+string _entity_code_to_char(string entity_code) {
+  switch (entity_code) {
+      case "quot":
+      case "#34":
+        return '"';
+      case "apos":
+      case "#39":
+        return "'";
+  }
+  abort(`Unknown HTML entity code: &{entity_code};`);
+  return "NOT_REACHED"; // Dummy return statement
+}
+
+
+matcher _ENTITY_MATCHER = create_matcher("&(\\w+|#\\d+);", "");
+
+// Utility function
+// Replace some offending HTML entities in skill names with proper characters
+string _unescape_entities(string escaped) {
+  buffer unescaped;
+
+  _ENTITY_MATCHER.reset(escaped);
+  while (_ENTITY_MATCHER.find()) {
+    string entity_code = _ENTITY_MATCHER.group(1);
+    _ENTITY_MATCHER.append_replacement(unescaped, _entity_code_to_char(entity_code));
+  }
+  _ENTITY_MATCHER.append_tail(unescaped);
+
+  return unescaped;
+}
+
+
 // Retrieves the guild skill data for the given class.
 // The returned mapping contains an array of skills for each level.
 // This uses KoLmafia's internal data.
@@ -73,7 +107,10 @@ TrainerSkillInfo parse_info_from_row(XPathMatch row_node) {
   // Identify the skill by name
   XPathMatch node_skill_name = row_node.find("//a").first();
   string skill_name = node_skill_name.find("/text()").raw();
-  skill the_skill = to_skill(skill_name);
+
+  // Some skills have "&apos;" and possibly other HTML entities in the HTML.
+  // We should unescape them first
+  skill the_skill = to_skill(_unescape_entities(skill_name));
   if (the_skill == $skill[ none ]) {
     _error(`KoLmafia doesn't know about the skill "{skill_name}"`);
   }
