@@ -191,13 +191,6 @@ string join(string joiner, string [int] fragments) {
 }
 
 
-// Utility function. Replaces the first occurrence of `find` with `replaced`.
-string replace_once(string text, string find, string replaced) {
-  int index = text.index_of(find);
-  return text.substring(0, index) + replaced + text.substring(index + find.length());
-}
-
-
 // Utility function
 // Uses XPath to strip all HTML tags from the markup, leaving only text
 string _xpath_strip_html(string markup) {
