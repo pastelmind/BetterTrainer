@@ -8,7 +8,7 @@ It provides a better UI for your guild's skill trainer.
 Enter the following into KoLmafia's gCLI:
 
 ```
-svn checkout https://github.com/pastelmind/bettertrainer/trunk/release
+svn checkout https://github.com/pastelmind/BetterTrainer/trunk/release
 ```
 
 ## Features
