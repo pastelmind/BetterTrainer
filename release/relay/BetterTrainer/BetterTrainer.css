@@ -1,0 +1,24 @@
+/* Override Tippy's default tooltip style to fit KoL */
+.tippy-content {
+  background-color: white;
+  border: 2px solid blue;
+  box-shadow: 1px 1px 3px black;
+  color: black;
+  font-size: initial;
+  min-width: 100px;
+}
+
+.tippy-arrow {
+  color: blue;
+}
+
+/* KoL's skill description margins are too large. Let's make them smaller.  */
+.tippy-content blockquote {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+/* Prevent the guild table images receiving weird margins in HTML Standards mode */
+table img {
+  display: block;
+}
