@@ -1,7 +1,12 @@
-// This script is loosely based on the Improved Guild Trainer by rbond86.
-// For their work, see:
-// - Original thread: https://kolmafia.us/threads/improved-guild-trainer.13972/
-// - Repository: https://sourceforge.net/projects/rlbond86-mafia-scripts/
+/**
+ * BetterTrainer v0.1.0 by philmasterplus
+ *
+ * This script is inspired by the Improved Guild Trainer by rbond86.
+ * For their work, see:
+ *
+ * - Original thread: https://kolmafia.us/threads/improved-guild-trainer.13972/
+ * - Repository: https://sourceforge.net/projects/rlbond86-mafia-scripts/
+ */
 
 script "BetterTrainer";
 notify "philmasterplus";
@@ -19,30 +24,34 @@ string _debug_msg(string msg) {
   return `[relay/guild.ash][{timestamp}] {msg}`;
 }
 
-// Prints a debug message to the CLI
+
+/**
+ * Prints a decorated message to the gCLI if a debugging property is set.
+ * @param   msg   Debug message to print
+ */
 void _debug(string msg) {
   if (get_property("philmasterplus_BetterTrainer_DebugMode") != "") {
     print(_debug_msg(msg));
   }
 }
 
-// Prints a debug message to the CLI and aborts the script
+
+/**
+ * Aborts the script and prints a decorated error message to the gCLI.
+ * @param   msg   Abort message
+ */
 void _error(string msg) {
   abort(_debug_msg(`ERROR: {msg}`));
 }
 
 
-// @internal
-// Returns a character version of the given entity token.
+/**
+ * Attempts to unescape a HTML entity to its character.
+ * This handles only a few types of entities, as it is intended for parsing
+ * @param   entity_code
+ * @return  The character code.
+ */
 string _entity_code_to_char(string entity_code) {
-  switch (entity_code) {
-      case "quot":
-      case "#34":
-        return '"';
-      case "apos":
-      case "#39":
-        return "'";
-  }
   _error(`Unknown HTML entity code: &{entity_code};`);
   return "NOT_REACHED"; // Dummy return statement
 }
@@ -58,7 +67,20 @@ string _unescape_entities(string escaped) {
   _ENTITY_MATCHER.reset(escaped);
   while (_ENTITY_MATCHER.find()) {
     string entity_code = _ENTITY_MATCHER.group(1);
-    _ENTITY_MATCHER.append_replacement(unescaped, _entity_code_to_char(entity_code));
+    string unescaped_char;
+    switch (entity_code) {
+        case "quot":
+        case "#34":
+          unescaped_char = '"';
+          break;
+        case "apos":
+        case "#39":
+          unescaped_char = "'";
+          break;
+        default:
+          _error(`Unknown HTML entity code: &{entity_code};`);
+    }
+    _ENTITY_MATCHER.append_replacement(unescaped, unescaped_char);
   }
   _ENTITY_MATCHER.append_tail(unescaped);
 
