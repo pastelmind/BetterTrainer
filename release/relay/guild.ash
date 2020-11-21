@@ -5,6 +5,7 @@
 
 script "BetterTrainer";
 notify "philmasterplus";
+since 20.7;
 
 import <BetterTrainer/XPathMatch.ash>
 
