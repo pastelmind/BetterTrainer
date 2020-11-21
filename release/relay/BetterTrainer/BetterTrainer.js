@@ -2,6 +2,31 @@
  * BetterTrainer (guild.ash) skill popup code
  */
 
+/**
+ * Parses the HTML source of a skill/effect page and extracts the DOM nodes
+ * containing the description.
+ * @param {string} html HTML source of the page
+ * @returns {DocumentFragment} DocumentFragment containing the description
+ * @throws {Error} If the description element cannot be extracted
+ */
+function extractDescriptionFragment(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const elementId = "description";
+  const descriptionElem = doc.getElementById(elementId);
+  if (!descriptionElem) {
+    throw new Error(`Cannot find element with ID "${elementId}"`);
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const child of descriptionElem.children) {
+    fragment.appendChild(document.importNode(child, true));
+  }
+  return fragment;
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   // Manually loop through each element to preload <iframe>s
   for (const tooltipElem of document.getElementsByClassName(
@@ -58,9 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return response.text();
         })
         .then((html) => {
-          const bodyTagMatch = /<body[^>]*>([\s\S]*)<\/body>/i.exec(html);
-          if (!bodyTagMatch) throw new Error("Cannot find <body> tag");
-          tippyInstance.setContent(bodyTagMatch[1]);
+          tippyInstance.setContent(extractDescriptionFragment(html));
         })
         .catch((error) => {
           tippyInstance.setContent("Failed to load page");
