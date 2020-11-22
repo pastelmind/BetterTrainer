@@ -26,6 +26,23 @@ function extractDescriptionFragment(html) {
   return fragment;
 }
 
+/**
+ * Fetches the URL for a skill/effect page and extracts the description.
+ * @param {string} url URL of the page
+ * @returns {Promise<DocumentFragment>} DocumentFragment containing the
+ *    description
+ * @throws {Error} If the page cannot be retrieved or the description cannot be
+ *    extracted
+ */
+async function fetchDescription(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} ${response.statusText}`);
+  }
+  const html = await response.text();
+
+  return extractDescriptionFragment(html);
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   // Manually loop through each element to preload <iframe>s
@@ -75,15 +92,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       event.preventDefault();
 
-      fetch(event.target.href)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status} ${response.statusText}`);
-          }
-          return response.text();
-        })
-        .then((html) => {
-          tippyInstance.setContent(extractDescriptionFragment(html));
+      fetchDescription(event.target.href)
+        .then((descriptionFragment) => {
+          tippyInstance.setContent(descriptionFragment);
         })
         .catch((error) => {
           tippyInstance.setContent("Failed to load page");
