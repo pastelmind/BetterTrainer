@@ -5,6 +5,7 @@
 
 script "BetterTrainer";
 notify "philmasterplus";
+since 20.7;
 
 import <BetterTrainer/XPathMatch.ash>
 
@@ -43,7 +44,7 @@ string _entity_code_to_char(string entity_code) {
       case "#39":
         return "'";
   }
-  abort(`Unknown HTML entity code: &{entity_code};`);
+  _error(`Unknown HTML entity code: &{entity_code};`);
   return "NOT_REACHED"; // Dummy return statement
 }
 

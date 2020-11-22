@@ -3,6 +3,7 @@
 // since it only supports a small subset of XPath.
 
 script "XPathMatch";
+since 20.7;
 
 
 // Represents the result of an xpath() match.
