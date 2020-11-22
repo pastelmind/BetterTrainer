@@ -44,73 +44,83 @@ async function fetchDescription(url) {
   return extractDescriptionFragment(html);
 }
 
+/**
+ * Adds description tooltip to a HTML element.
+ * @param {HTMLElement} tooltipElem Element to apply add tooltips
+ */
+async function setupTooltip(tooltipElem) {
+  /**
+   * Primary tooltip content. This is either a loading message or the loaded
+   * skill description.
+   * @type {string | HTMLElement}
+   */
+  let tooltipContent = "Loading...";
+
+  const tippyInstance = tippy(tooltipElem, {
+    allowHTML: true,
+    content: tooltipContent,
+    delay: 300,
+    duration: 100,
+    interactive: true,
+    onHidden: (instance) => {
+      // Reset the tooltip contents, overriding any secondary pages that the
+      // user may have visited
+      instance.setContent(tooltipContent);
+    },
+    placement: "left-end",
+  });
+
+  try {
+    // Preload the skill description page
+    const skillDescFragment = await fetchDescription(
+      tooltipElem.dataset.betterTrainerDescUrl
+    );
+
+    // Create a <div> tag to hold the actual tooltip contents
+    tooltipContent = document.createElement("div");
+    tooltipContent.appendChild(skillDescFragment);
+
+    // If the user clicks on a link inside the skill description (e.g. the
+    // effect description for a buff skill), load the secondary page and
+    // replace the contents of the div
+    tooltipContent.addEventListener("click", async (event) => {
+      if (!(event.target.tagName === "A" && event.target.href)) return;
+
+      event.preventDefault();
+
+      try {
+        const effectDescFragment = await fetchDescription(event.target.href);
+        tippyInstance.setContent(effectDescFragment);
+      } catch (error) {
+        tippyInstance.setContent("Failed to load page");
+        console.error(
+          "Failed to fetch link:",
+          event.target.href,
+          "\nReason:",
+          error
+        );
+      }
+    });
+
+    // Show the updated tooltip content
+    tippyInstance.setContent(tooltipContent);
+  } catch (error) {
+    tippyInstance.setContent("Failed to load page");
+    console.error(
+      "Failed to fetch link:",
+      tooltipElem.dataset.betterTrainerDescUrl,
+      "\nReason:",
+      error.stack
+    );
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   // Manually loop through each element to preload <iframe>s
   for (const tooltipElem of document.getElementsByClassName(
     "better-trainer-skill-tooltip"
   )) {
-    /**
-     * Primary tooltip content. This is either a loading message or the loaded
-     * skill description.
-     * @type {string | HTMLElement}
-     */
-    let tooltipContent = "Loading...";
-
-    const tippyInstance = tippy(tooltipElem, {
-      allowHTML: true,
-      content: tooltipContent,
-      delay: 300,
-      duration: 100,
-      interactive: true,
-      onHidden: (instance) => {
-        // Reset the tooltip contents, overriding any secondary pages that the
-        // user may have visited
-        instance.setContent(tooltipContent);
-      },
-      placement: "left-end",
-    });
-
-    // Preload the skill description page
-    fetchDescription(tooltipElem.dataset.betterTrainerDescUrl)
-      .then((skillDescFragment) => {
-        // Create a <div> tag to hold the actual tooltip contents
-        tooltipContent = document.createElement("div");
-        tooltipContent.appendChild(skillDescFragment);
-
-        // If the user clicks on a link inside the skill description (e.g. the
-        // effect description for a buff skill), load the secondary page and
-        // replace the contents of the div
-        tooltipContent.addEventListener("click", (event) => {
-          if (!(event.target.tagName === "A" && event.target.href)) return;
-
-          event.preventDefault();
-
-          fetchDescription(event.target.href)
-            .then((descriptionFragment) => {
-              tippyInstance.setContent(descriptionFragment);
-            })
-            .catch((error) => {
-              tippyInstance.setContent("Failed to load page");
-              console.error(
-                "Failed to fetch link:",
-                event.target.href,
-                "\nReason:",
-                error
-              );
-            });
-        });
-
-        // Show the updated tooltip content
-        tippyInstance.setContent(tooltipContent);
-      })
-      .catch((error) => {
-        tippyInstance.setContent("Failed to load page");
-        console.error(
-          "Failed to fetch link:",
-          tooltipElem.dataset.betterTrainerDescUrl,
-          "\nReason:",
-          error
-        );
-      });
+    // Note: Do not use await here to allow all requests to fire at once.
+    setupTooltip(/** @type {HTMLElement} */ (tooltipElem));
   }
 });
