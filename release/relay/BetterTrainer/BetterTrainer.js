@@ -45,6 +45,15 @@ async function fetchDescription(url) {
 }
 
 /**
+ * Prints a detailed error message to the browser console.
+ * @param {Error} error Error caught while trying to load a URL
+ * @param {string} url  URL that caused an error
+ */
+function reportFetchError(error, url) {
+  console.error(`Failed to fetch URL: ${url}\nReason: ${error.stack}`);
+}
+
+/**
  * Adds description tooltip to a HTML element.
  * @param {HTMLElement} tooltipElem Element to apply add tooltips
  */
@@ -93,12 +102,7 @@ async function setupTooltip(tooltipElem) {
         tippyInstance.setContent(effectDescFragment);
       } catch (error) {
         tippyInstance.setContent("Failed to load page");
-        console.error(
-          "Failed to fetch link:",
-          event.target.href,
-          "\nReason:",
-          error
-        );
+        reportFetchError(error, event.target.href);
       }
     });
 
@@ -106,12 +110,7 @@ async function setupTooltip(tooltipElem) {
     tippyInstance.setContent(tooltipContent);
   } catch (error) {
     tippyInstance.setContent("Failed to load page");
-    console.error(
-      "Failed to fetch link:",
-      tooltipElem.dataset.betterTrainerDescUrl,
-      "\nReason:",
-      error.stack
-    );
+    reportFetchError(error, tooltipElem.dataset.betterTrainerDescUrl);
   }
 }
 
