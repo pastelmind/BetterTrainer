@@ -49,12 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
   for (const tooltipElem of document.getElementsByClassName(
     "better-trainer-skill-tooltip"
   )) {
-    // Preload the skill description page using an <iframe>
-    const iframe = document.createElement("iframe");
-    iframe.src = tooltipElem.dataset.betterTrainerDescUrl;
-    iframe.style.display = "none";
-    document.body.appendChild(iframe);
-
     /**
      * Primary tooltip content. This is either a loading message or the loaded
      * skill description.
@@ -76,38 +70,47 @@ document.addEventListener("DOMContentLoaded", () => {
       placement: "left-end",
     });
 
-    iframe.addEventListener("load", () => {
-      // Create a <div> tag to hold the actual tooltip contents
-      tooltipContent = document.createElement("div");
-      tooltipContent.innerHTML = iframe.contentDocument.getElementById(
-        "description"
-      ).innerHTML;
+    // Preload the skill description page
+    fetchDescription(tooltipElem.dataset.betterTrainerDescUrl)
+      .then((skillDescFragment) => {
+        // Create a <div> tag to hold the actual tooltip contents
+        tooltipContent = document.createElement("div");
+        tooltipContent.appendChild(skillDescFragment);
 
-      // If the user clicks on a link inside the skill description (e.g. the
-      // effect description for a buff skill), load the secondary page and
-      // replace the contents of the div
-      tooltipContent.addEventListener("click", (event) => {
-        if (!(event.target.tagName === "A" && event.target.href)) return;
+        // If the user clicks on a link inside the skill description (e.g. the
+        // effect description for a buff skill), load the secondary page and
+        // replace the contents of the div
+        tooltipContent.addEventListener("click", (event) => {
+          if (!(event.target.tagName === "A" && event.target.href)) return;
 
-        event.preventDefault();
+          event.preventDefault();
 
-        fetchDescription(event.target.href)
-          .then((descriptionFragment) => {
-            tippyInstance.setContent(descriptionFragment);
-          })
-          .catch((error) => {
-            tippyInstance.setContent("Failed to load page");
-            console.error(
-              "Failed to fetch link:",
-              event.target.href,
-              "\nReason:",
-              error
-            );
-          });
+          fetchDescription(event.target.href)
+            .then((descriptionFragment) => {
+              tippyInstance.setContent(descriptionFragment);
+            })
+            .catch((error) => {
+              tippyInstance.setContent("Failed to load page");
+              console.error(
+                "Failed to fetch link:",
+                event.target.href,
+                "\nReason:",
+                error
+              );
+            });
+        });
+
+        // Show the updated tooltip content
+        tippyInstance.setContent(tooltipContent);
+      })
+      .catch((error) => {
+        tippyInstance.setContent("Failed to load page");
+        console.error(
+          "Failed to fetch link:",
+          tooltipElem.dataset.betterTrainerDescUrl,
+          "\nReason:",
+          error
+        );
       });
-
-      // Show the updated tooltip content
-      tippyInstance.setContent(tooltipContent);
-    });
   }
 });
