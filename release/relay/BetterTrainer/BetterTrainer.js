@@ -55,62 +55,59 @@ document.addEventListener("DOMContentLoaded", () => {
     iframe.style.display = "none";
     document.body.appendChild(iframe);
 
-    // Manually track whether the <iframe> is loaded, because
-    // iframe.contentDocument.readyState seems to be unreliable
-    let isContentLoaded = false;
-
-    const tooltipContent = document.createElement("div");
-
-    const skillDescLoader = () => {
-      if (!isContentLoaded) return "Loading...";
-
-      // Reset the tooltip contents, overriding any secondary pages that the
-      // user may have visited
-      tooltipContent.innerHTML = iframe.contentDocument.getElementById('description').innerHTML;
-      return tooltipContent;
-    };
+    /**
+     * Primary tooltip content. This is either a loading message or the loaded
+     * skill description.
+     * @type {string | HTMLElement}
+     */
+    let tooltipContent = "Loading...";
 
     const tippyInstance = tippy(tooltipElem, {
       allowHTML: true,
-      content: skillDescLoader,
+      content: tooltipContent,
       delay: 300,
       duration: 100,
       interactive: true,
       onHidden: (instance) => {
         // Reset the tooltip contents, overriding any secondary pages that the
         // user may have visited
-        instance.setContent(skillDescLoader);
+        instance.setContent(tooltipContent);
       },
       placement: "left-end",
     });
 
-    // If the user clicks on a link inside the skill description (e.g. the
-    // effect description for a buff skill), load the secondary page and
-    // replace the contents of the div
-    tooltipContent.addEventListener("click", (event) => {
-      if (!(event.target.tagName === "A" && event.target.href)) return;
-
-      event.preventDefault();
-
-      fetchDescription(event.target.href)
-        .then((descriptionFragment) => {
-          tippyInstance.setContent(descriptionFragment);
-        })
-        .catch((error) => {
-          tippyInstance.setContent("Failed to load page");
-          console.error(
-            "Failed to fetch link:",
-            event.target.href,
-            "\nReason:",
-            error
-          );
-        });
-    });
-
     iframe.addEventListener("load", () => {
-      isContentLoaded = true;
-      // Must be called to resize the tooltip
-      tippyInstance.setContent(skillDescLoader);
+      // Create a <div> tag to hold the actual tooltip contents
+      tooltipContent = document.createElement("div");
+      tooltipContent.innerHTML = iframe.contentDocument.getElementById(
+        "description"
+      ).innerHTML;
+
+      // If the user clicks on a link inside the skill description (e.g. the
+      // effect description for a buff skill), load the secondary page and
+      // replace the contents of the div
+      tooltipContent.addEventListener("click", (event) => {
+        if (!(event.target.tagName === "A" && event.target.href)) return;
+
+        event.preventDefault();
+
+        fetchDescription(event.target.href)
+          .then((descriptionFragment) => {
+            tippyInstance.setContent(descriptionFragment);
+          })
+          .catch((error) => {
+            tippyInstance.setContent("Failed to load page");
+            console.error(
+              "Failed to fetch link:",
+              event.target.href,
+              "\nReason:",
+              error
+            );
+          });
+      });
+
+      // Show the updated tooltip content
+      tippyInstance.setContent(tooltipContent);
     });
   }
 });
