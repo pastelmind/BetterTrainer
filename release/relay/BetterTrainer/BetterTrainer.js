@@ -54,6 +54,12 @@ function reportFetchError(error, url) {
 }
 
 /**
+ * URL patterns for pages that can be browsed within the tooltip popup.
+ * Pages that require a direct visit (e.g. a shop) are filtered by this pattern.
+ */
+const tooltipViewableUrlPattern = /(?:desc_skill|desc_effect|desc_familiar|desc_item)\.php/i;
+
+/**
  * Adds description tooltip to a HTML element.
  * @param {HTMLElement} tooltipElem Element to apply add tooltips
  */
@@ -92,8 +98,9 @@ async function setupTooltip(tooltipElem) {
     // If the user clicks on a link inside the skill description (e.g. the
     // effect description for a buff skill), load the secondary page and
     // replace the contents of the div
-    tooltipContent.addEventListener("click", async (event) => {
+    tippyInstance.popper.addEventListener("click", async (event) => {
       if (!(event.target.tagName === "A" && event.target.href)) return;
+      if (!tooltipViewableUrlPattern.test(event.target.href)) return;
 
       event.preventDefault();
 
