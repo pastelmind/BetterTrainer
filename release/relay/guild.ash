@@ -276,9 +276,9 @@ string make_perm_info_blurb(string perm_status) {
   if (perm_status == "") {
     return "";
   } else if (perm_status == "P") {
-    return `<div style="font-size: 50%; color: #009900">Softcore permed skill</div>`;
+    return `<div class="better-trainer-skill-table__perm-info better-trainer-skill-table__perm-info--sc">Softcore permed skill</div>`;
   } else if (perm_status == "HP") {
-    return `<div style="font-size: 50%; color: #0000cc">Hardcore permed skill</div>`;
+    return `<div class="better-trainer-skill-table__perm-info better-trainer-skill-table__perm-info--hc">Hardcore permed skill</div>`;
   }
 
   _error(`make_perm_info_blurb(): Unexpected perm status: {perm_status}`);
@@ -297,21 +297,26 @@ string generate_button(skill sk, boolean is_available, boolean is_enabled) {
   buffer button;
 
   string disabled_attr = is_enabled ? "" : "disabled";
-  string disabled_style = is_enabled ? "" : "color: #cccccc; border-color: #cccccc;";
+  string button_classes = "button better-trainer-guild-table__unlock-button";
+  if (!is_enabled) {
+    button_classes += " better-trainer-guild-table__unlock-button--disabled";
+  }
   // Reduce line-height to make the button vertically compact in HTML standards mode
-  button.appendln(`      <button class="button" type="submit" {disabled_attr} style="min-width: 5.5em; line-height: 1; {disabled_style}">`);
+  button.appendln(`      <button class="{button_classes}" type="submit" {disabled_attr}>`);
 
   if (is_available) {
     // Skill can be (eventually) purchased
     button.appendln(`        Train<br>`);
 
-    string cost_style;
+    string meat_cost_classes = "better-trainer-guild-table__meat-cost";
     if (my_meat() < sk.traincost) {
-      // If I can't afford to buy this skill, show red text for the cost
-      cost_style = `color: {is_enabled ? "#cc0000" : "#cc9999"}`;
+      meat_cost_classes += ` better-trainer-guild-table__meat-cost--unaffordable`;
+    }
+    if (!is_enabled) {
+      meat_cost_classes += ` better-trainer-guild-table__meat-cost--disabled`;
     }
     // pointer-events: none is needed to prevent the mousedown handler from triggering
-    button.appendln(`        <span style="font-size: 75%; pointer-events: none; {cost_style}">{to_string(sk.traincost, "%,d")} meat</span>`);
+    button.appendln(`        <span class="{meat_cost_classes}">{to_string(sk.traincost, "%,d")} meat</span>`);
   } else {
     // The guild store doesn't display the skill for unknown reason
     button.appendln(`        N/A`);
@@ -331,12 +336,12 @@ string generate_skill_table(
   skill [int][int] guild_skills = class_guild_skills(my_class());
 
   buffer html;
-  html.appendln("<table>");
-  html.appendln("<tbody>");
+  html.appendln('<div class="better-trainer-guild-table">');
 
+  int row_num = 0;
   foreach level in guild_skills {
-    html.appendln("<tr>");
-    html.appendln(`  <td class="small" style="text-align: right">Level {level})</td>`);
+    ++row_num;
+    html.appendln(`  <div class="better-trainer-guild-table__level" style="grid-row: {row_num}">Level {level})</div>`);
 
     foreach _, sk in guild_skills[level] {
       // Generate clickable icon and skill name links
@@ -348,37 +353,44 @@ string generate_skill_table(
       // Also, we have a "show original skill table" link just in case.
       string skillDescUrl = `desc_skill.php?whichskill={to_int(sk)}&self=true`;
       string onclick = `poop('{skillDescUrl}', 'skill', 350, 300)`;
-      html.appendln(`  <td style="padding-left: .5em"><img src="/images/itemimages/{sk.image}" onclick="{onclick}" style="cursor: pointer"></td>`);
+      string skll_name_classes = "better-trainer-guild-table__skill-name";
+      if (trainable_skills contains sk && !trainable_skills[sk].is_enabled) {
+        skll_name_classes += " better-trainer-guild-table__skill-name--disabled";
+      }
+      html.appendln(`  <div class="better-trainer-guild-table__skill-cell better-trainer-skill-tooltip" style="grid-row: {row_num}" onclick="{onclick}" data-better-trainer-desc-url="{skillDescUrl}">`);
+      html.appendln(`    <img class="better-trainer-guild-table__icon" src="/images/itemimages/{sk.image}">`);
+      html.appendln(`    <div class="better-trainer-guild-table__skill-content">`);
+      html.appendln(`      <span class="{skll_name_classes}">{sk.name}</span>`);
       string perm_info_blurb = make_perm_info_blurb(perm_info[sk]);
-      html.appendln(`  <td><b class="better-trainer-skill-tooltip" onclick="{onclick}" style="cursor: pointer" data-better-trainer-desc-url="{skillDescUrl}">{sk}</b>{perm_info_blurb}</td>`);
+      if (perm_info_blurb != "") {
+        html.appendln(`      {perm_info_blurb}`);
+      }
+      html.appendln(`    </div>`);
+      html.appendln(`  </div>`);
 
       // Generate Train button or checkmark
-      html.appendln(`  <td>`);
+      html.appendln(`  <div class="better-trainer-guild-table__control-cell" style="grid-row: {row_num}">`);
       if (trainable_skills contains sk) {
         // Good, the skill is either buyable or unlockable.
         TrainerSkillInfo skill_info = trainable_skills[sk];
-        html.appendln(`    <form {skill_info.form_attributes} style="margin: 0">`);
+        html.appendln(`    <form {skill_info.form_attributes}>`);
         html.appendln(generate_button(sk, true, skill_info.is_enabled));
         html.appendln(`      {"".join(skill_info.hidden_inputs)}`);
         html.appendln(`    </form>`);
       } else {
         if (have_skill(sk)) {
           // You already bought or permed the skill
-          html.appendln(`    <div style="text-align: center; color: #00cc00; font-weight: bold: font-size: 300%">&#x2714;</div>`);
+          html.appendln(`    <div class="better-trainer-guild-table__status better-trainer-guild-table__status--owned" title="You already learned this skill">&#x2714;</div>`);
         } else {
           // The guild store doesn't display the skill for unknown reason
           html.appendln(generate_button(sk, false, false));
         }
       }
-      html.appendln(`  </td>`);
+      html.appendln(`  </div>`);
     }
-
-    html.appendln("</tr>");
   }
 
-  html.appendln("</tbody>");
-  html.appendln("</table>");
-
+  html.appendln("</div>");
   return html;
 }
 

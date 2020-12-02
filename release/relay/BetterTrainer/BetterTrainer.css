@@ -6,6 +6,9 @@
   color: black;
   font-size: initial;
   min-width: 100px;
+  /* For some reason, Chrome tries to center-align grid children. Force-reset
+     the text alignment to prevent this. */
+  text-align: initial;
 }
 
 .tippy-arrow {
@@ -21,4 +24,87 @@
 /* Prevent the guild table images receiving weird margins in HTML Standards mode */
 table img {
   display: block;
+}
+
+/******** Guild skill table ********/
+
+.better-trainer-guild-table {
+  align-items: center;
+  display: grid;
+  gap: 0.3em 0.5em;
+}
+
+.better-trainer-guild-table__level {
+  font-size: 0.8em;
+  text-align: right;
+}
+
+.better-trainer-guild-table__skill-cell {
+  cursor: pointer;
+  align-items: center;
+  display: flex;
+  /* Do not stretch the cell beyond the skill image and name.
+     This prevents tooltips from showing up when the cursor hovers over empty
+     space. */
+  justify-self: start;
+  /* When a long skill name wraps around, prevent it from being center-aligned
+     by Chrome. */
+  text-align: initial;
+}
+
+.better-trainer-guild-table__icon {
+  margin-right: 0.3em;
+}
+
+.better-trainer-guild-table__skill-name {
+  font-weight: bold;
+}
+
+.better-trainer-guild-table__skill-name--disabled {
+  color: #cccccc;
+}
+
+.better-trainer-skill-table__perm-info {
+  font-size: 50%;
+}
+
+.better-trainer-skill-table__perm-info--sc {
+  color: #009900;
+}
+
+.better-trainer-skill-table__perm-info--hc {
+  color: #0000cc;
+}
+
+.better-trainer-guild-table__unlock-button {
+  width: 5.5em;
+}
+
+/* Trick to increase the specificity of this rule and override KoL's style */
+.better-trainer-guild-table__unlock-button.better-trainer-guild-table__unlock-button--disabled {
+  border-color: #cccccc;
+  color: #cccccc;
+}
+
+.better-trainer-guild-table__meat-cost {
+  font-size: 75%;
+  /* Prevent the mousedown handler from triggering style changes when the button
+     is supposed to be disabled */
+  pointer-events: none;
+}
+
+.better-trainer-guild-table__meat-cost--unaffordable {
+  color: #cc0000;
+}
+
+.better-trainer-guild-table__meat-cost--unaffordable.better-trainer-guild-table__meat-cost--disabled {
+  color: #cc9999;
+}
+
+.better-trainer-guild-table__status {
+  cursor: default;
+}
+
+.better-trainer-guild-table__status--owned {
+  color: #009900;
 }
