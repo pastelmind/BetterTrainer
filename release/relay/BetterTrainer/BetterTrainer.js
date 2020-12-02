@@ -94,6 +94,7 @@ async function setupTooltip(tooltipElem) {
     delay: 300,
     duration: 100,
     interactive: true,
+    maxWidth: 300,
     onHidden: (instance) => {
       // Reset the tooltip contents, overriding any secondary pages that the
       // user may have visited
