@@ -45,6 +45,23 @@ async function fetchDescription(url) {
 }
 
 /**
+ * Extracts the skill description URL from the element's data attributes.
+ * @param {HTMLElement} element Element to inspect
+ * @returns {string} Skill description URL
+ * @throws {Error} If the description URL cannot be extracted
+ */
+function extractDescriptionUrl(element) {
+  if (element.dataset.betterTrainerDescUrl) {
+    return element.dataset.betterTrainerDescUrl;
+  }
+  if (element.dataset.betterTrainerSkillId) {
+    return `desc_skill.php?whichskill=${element.dataset.betterTrainerSkillId}&self=true`;
+  }
+
+  throw new Error(`Cannot find skill ID in element ${element}`);
+}
+
+/**
  * Prints a detailed error message to the browser console.
  * @param {Error} error Error caught while trying to load a URL
  * @param {string} url  URL that caused an error
@@ -88,7 +105,7 @@ async function setupTooltip(tooltipElem) {
   try {
     // Preload the skill description page
     const skillDescFragment = await fetchDescription(
-      tooltipElem.dataset.betterTrainerDescUrl
+      extractDescriptionUrl(tooltipElem)
     );
 
     // Create a <div> tag to hold the actual tooltip contents
