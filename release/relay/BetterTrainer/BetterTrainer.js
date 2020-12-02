@@ -92,7 +92,7 @@ async function setupTooltip(tooltipElem) {
     // If the user clicks on a link inside the skill description (e.g. the
     // effect description for a buff skill), load the secondary page and
     // replace the contents of the div
-    tooltipContent.addEventListener("click", async (event) => {
+    tippyInstance.popper.addEventListener("click", async (event) => {
       if (!(event.target.tagName === "A" && event.target.href)) return;
 
       event.preventDefault();
