@@ -54,7 +54,13 @@ boolean is_block_node(string node) {
 
 
 // Get a single node in the current match set as a new match set.
+// If there is no node with the given index, returns an empty XPathMatch object.
 XPathMatch get(XPathMatch match, int index) {
+  // Out of bounds
+  if (index < 0 || match.nodes.count() <= index) {
+    return new XPathMatch();
+  }
+
   string node = match.nodes[index];
   // If this is a block-level node, it's safe to split off into a new fragment.
   if (is_block_node(node)) {
