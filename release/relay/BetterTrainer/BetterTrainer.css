@@ -108,3 +108,83 @@ table img {
 .better-trainer-guild-table__status--owned {
   color: #009900;
 }
+
+/******** Skill tree stuff ********/
+
+.better-trainer-skill-tree {
+  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(6, auto);
+  gap: 0.3em;
+}
+
+.better-trainer-skill-tree__header-cell {
+  align-self: stretch;
+  border-bottom: 1px solid #999999;
+  font-weight: bold;
+  grid-column-end: span 2;
+  padding-bottom: 0.2em;
+}
+
+.better-trainer-skill-tree__tree-status {
+  font-size: 0.75em;
+  margin-top: 0.5em;
+}
+
+.better-trainer-skill-tree__tree-status--mastered {
+  color: #0000ff;
+}
+
+.better-trainer-skill-tree__unlock-button {
+  margin-top: 0.3em;
+}
+
+.better-trainer-skill-tree__skill-cell {
+  align-items: center;
+  color: #cccccc;
+  cursor: pointer;
+  display: flex;
+  font-weight: bold;
+  /* Do not stretch the cell beyond the skill image and name.
+     This prevents tooltips from showing up when the cursor hovers over empty
+     space. */
+  justify-self: start;
+  /* When a long skill name wraps around, prevent it from being center-aligned
+     by Chrome. */
+  text-align: initial;
+}
+
+.better-trainer-skill-tree__skill-cell--owned {
+  color: #000000;
+}
+
+.better-trainer-skill-tree__skill-cell--next-unlock {
+  color: #666666;
+}
+
+.better-trainer-skill-tree__skill-cell--unobtainable {
+  text-decoration: line-through #999999;
+}
+
+.better-trainer-skill-tree__icon {
+  height: 30px;
+  margin-right: 0.3em;
+  width: 30px;
+}
+
+.better-trainer-skill-tree__status {
+  /* We're using emojis as icons, so don't show text */
+  cursor: default;
+}
+
+.better-trainer-skill-tree__status--owned {
+  color: #009900;
+}
+
+.better-trainer-skill-tree__status--next-unlock {
+  color: #0000ff;
+}
+
+.better-trainer-skill-tree__status--unobtainable {
+  color: #cccccc;
+}
