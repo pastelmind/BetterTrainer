@@ -162,6 +162,10 @@ table img {
   color: #666666;
 }
 
+.better-trainer-skill-tree__skill-cell--unobtainable {
+  text-decoration: line-through #999999;
+}
+
 .better-trainer-skill-tree__icon {
   height: 30px;
   margin-right: 0.3em;
@@ -179,4 +183,8 @@ table img {
 
 .better-trainer-skill-tree__status--next-unlock {
   color: #0000ff;
+}
+
+.better-trainer-skill-tree__status--unobtainable {
+  color: #cccccc;
 }

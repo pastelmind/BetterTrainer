@@ -109,18 +109,20 @@ string generate_skill_table(int boris_points, string vanilla_skill_table) {
     html.appendln("  </div>");
   }
 
+  // Maximum skill points you can obtain this run
+  int MAX_BORIS_POINTS = boris_points + max(0, 15 - my_level());
+
   foreach tree_id in AOB_SKILLS {
     boolean is_next_unlock = true;
 
-    // Start at 1 to account for the header row
-    int grid_row_num = 1;
+    int skill_tier = 1;
+    int current_unlocked_tier;
     foreach sk in AOB_SKILLS[tree_id] {
       // Sanity check
       if (sk.class != $class[ Avatar of Boris ]) {
         _error(`{sk} is not an Avatar of Boris skill!`);
       }
 
-      ++grid_row_num;
       string cell_classes = "better-trainer-skill-tree__skill-cell";
       string status_classes = "better-trainer-skill-tree__status";
       string status_text = "";
@@ -131,9 +133,11 @@ string generate_skill_table(int boris_points, string vanilla_skill_table) {
           _debug(`KoLmafia thinks you have {sk}, but the game says it hasn't been learned yet`);
         }
 
+        current_unlocked_tier = skill_tier;
+
         cell_classes += " better-trainer-skill-tree__skill-cell--owned";
         status_classes += " better-trainer-skill-tree__status--owned";
-        status_text = "&#x2714;";
+        status_text = "&#x2714;"; // Check mark
         status_title = "You already learned this skill";
       } else {
         // Sanity check
@@ -141,23 +145,31 @@ string generate_skill_table(int boris_points, string vanilla_skill_table) {
           _debug(`KoLmafia thinks you don't have {sk}, but the game says you already learned it`);
         }
 
-        if (is_next_unlock) {
+        if (skill_tier - current_unlocked_tier > MAX_BORIS_POINTS) {
+          cell_classes += " better-trainer-skill-tree__skill-cell--unobtainable";
+          status_classes += " better-trainer-skill-tree__status--unobtainable";
+          status_text = "&#x2718;"; // X mark
+          status_title = "You cannot obtain this skill in this run.\nAscend as Avatar of Boris again to earn more skill points.";
+        } else if (is_next_unlock) {
           is_next_unlock = false;
           cell_classes += " better-trainer-skill-tree__skill-cell--next-unlock";
           status_classes += " better-trainer-skill-tree__status--next-unlock";
-          status_text = "&#x2b9c;";
+          status_text = "&#x2b9c;"; // Leftwards arrowhead
           status_title = "You will learn this skill when you place a skill point in this tree";
         }
       }
 
       // Each skill consumes 2 grid columns
       // Column 1 is the skill cell (skill icon and name with tooltips)
+      int grid_row_num = skill_tier + 1;
       html.appendln(`  <div class="{cell_classes} better-trainer-skill-tooltip" style="grid-row: {grid_row_num}" data-better-trainer-skill-id="{to_int(sk)}">`);
       html.appendln(`    <img class="better-trainer-skill-tree__icon" src="/images/itemimages/{sk.image}">`);
       html.appendln(`    {sk.name}`);
       html.appendln(`  </div>`);
       // Column 2 is the skill status (owned / next unlock / other)
       html.appendln(`  <div class="{status_classes}" style="grid-row: {grid_row_num}" title="{status_title}">{status_text}</div>`);
+
+      ++skill_tier;
     }
   }
 
